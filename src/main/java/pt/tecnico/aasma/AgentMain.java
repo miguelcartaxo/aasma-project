@@ -16,10 +16,22 @@
  */
 package pt.tecnico.aasma;
 
+import cz.cuni.amis.pogamut.ut2004.utils.UT2004BotRunner;
+import cz.cuni.amis.utils.exception.PogamutException;
+import java.util.List;
+
 /**
  *
  * @author Miguel
  */
 public class AgentMain {
+    
+    public static void main(String args[]) throws PogamutException {
+        new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
+                ReactiveAgent.class, // which UT2004BotController it should instantiate
+                "ReactiveAgent" // what name the runner should be using
+                ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
+                .startAgents(4);
+    }
     
 }
