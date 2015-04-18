@@ -18,7 +18,6 @@ package pt.tecnico.aasma;
 
 import cz.cuni.amis.pogamut.ut2004.utils.UT2004BotRunner;
 import cz.cuni.amis.utils.exception.PogamutException;
-import java.util.List;
 
 /**
  *

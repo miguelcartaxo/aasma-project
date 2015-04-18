@@ -17,12 +17,12 @@
 package pt.tecnico.aasma;
 
 
-
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.ObjectClassEventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.object.event.WorldObjectUpdatedEvent;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.base3d.worldview.object.event.WorldObjectAppearedEvent;
+import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotModuleController;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
@@ -34,6 +34,7 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.ConfigC
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.GameInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.InitedMessage;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Item;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Self;
 import cz.cuni.amis.pogamut.ut2004.utils.UnrealUtils;
@@ -42,17 +43,30 @@ import cz.cuni.amis.utils.exception.PogamutException;
 
 //flag info
 import cz.cuni.amis.utils.flag.FlagListener;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import org.jcp.xml.dsig.internal.dom.Utils;
+
+
 
 /**
  *
  * @author Miguel
  */
+
 public class ReactiveAgent extends UT2004BotModuleController{
     
+    protected TabooSet<Item> tabooItems = null;
     
+    protected Item item = null;
     
-        private FlagInfo ourFlag;
-        private FlagInfo enemyFlag;
+    public boolean shouldTakeFlag = true;
+    
+    private boolean takeBack = false;
+    
+    private FlagInfo ourFlag;
+    private FlagInfo enemyFlag;
     
     /**
      * Listener called when someone/something bumps into the bot. The bot
@@ -159,6 +173,12 @@ public class ReactiveAgent extends UT2004BotModuleController{
     @Override
     @SuppressWarnings("empty-statement")
     public void logic() throws PogamutException {
+        
+       if ((shouldTakeFlag && !ctf.isOurTeamCarryingEnemyFlag() && !ctf.isBotCarryingEnemyFlag()
+                || (shouldTakeFlag && ctf.isOurFlagDropped()) || (shouldTakeFlag && ctf.isEnemyFlagHome())
+                || (shouldTakeFlag && ctf.isEnemyFlagDropped())) && enemyFlag != null && !senses.isBeingDamaged()) {
+            this.stateTakeFlag();
+        }
     }
     
     @Override
@@ -167,9 +187,6 @@ public class ReactiveAgent extends UT2004BotModuleController{
         body.getCommunication().sendGlobalTextMessage("I was KILLED!");
 
     }
-    
-
-
 
 //flag info
     public FlagInfo getEnemyFlag() {
@@ -179,6 +196,44 @@ public class ReactiveAgent extends UT2004BotModuleController{
     public FlagInfo getOurFlag() {
         return ourFlag;
     }
+    
+    protected void stateTakeFlag() {
+        
+
+        if(takeBack) {
+            if (ourFlag != null) {
+                if (ourFlag.isVisible()) {
+                    move.moveTo(ourFlag.getLocation());
+                }
+            }
+        } else if (enemyFlag != null) {
+            if (enemyFlag.isVisible()) {
+                move.moveTo(enemyFlag.getLocation());
+            }
+        }
+
+    }
+    
+    @ObjectClassEventListener(eventClass = WorldObjectAppearedEvent.class, objectClass = FlagInfo.class)
+    protected void flagEncountered(WorldObjectAppearedEvent<FlagInfo> event) {
+
+        if (event.getObject().getTeam() != info.getTeam()) {
+            enemyFlag = event.getObject();
+
+            takeBack = false;
+
+        }
+        if (event.getObject().getTeam() == info.getTeam()) {
+            ourFlag = event.getObject();
+            if (ctf.isBotCarryingEnemyFlag()) {
+                takeBack = true;
+            }
+
+        }
+       
+        body.getCommunication().sendGlobalTextMessage("Found the flag of team " + event.getObject().getTeam());
+    }
+    
     
 }
     
