@@ -31,6 +31,7 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.BotKilled;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Bumped;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.ConfigChange;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.GameInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.InitedMessage;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
@@ -39,11 +40,19 @@ import cz.cuni.amis.pogamut.ut2004.utils.UnrealUtils;
 
 import cz.cuni.amis.utils.exception.PogamutException;
 
+//flag info
+import cz.cuni.amis.utils.flag.FlagListener;
+
 /**
  *
  * @author Miguel
  */
 public class ReactiveAgent extends UT2004BotModuleController{
+    
+    
+    
+        private FlagInfo ourFlag;
+        private FlagInfo enemyFlag;
     
     /**
      * Listener called when someone/something bumps into the bot. The bot
@@ -159,4 +168,17 @@ public class ReactiveAgent extends UT2004BotModuleController{
 
     }
     
+
+
+
+//flag info
+    public FlagInfo getEnemyFlag() {
+        return enemyFlag;
+    }
+
+    public FlagInfo getOurFlag() {
+        return ourFlag;
+    }
+    
 }
+    
