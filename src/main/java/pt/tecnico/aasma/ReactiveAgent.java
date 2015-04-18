@@ -32,6 +32,7 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.BotKill
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Bumped;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.ConfigChange;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInfo;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.GameInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.InitedMessage;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Item;
@@ -59,14 +60,22 @@ public class ReactiveAgent extends UT2004BotModuleController{
     
     protected TabooSet<Item> tabooItems = null;
     
+    private static String[] teamColors = new String[] {"Red", "Blue", "Green", "Gold"};
+    
     protected Item item = null;
     
     public boolean shouldTakeFlag = true;
+    
+    public boolean shouldReturnBaseFlag = true;
     
     private boolean takeBack = false;
     
     private FlagInfo ourFlag;
     private FlagInfo enemyFlag;
+    
+    private Location home;
+    
+    
     
     /**
      * Listener called when someone/something bumps into the bot. The bot
@@ -148,8 +157,10 @@ public class ReactiveAgent extends UT2004BotModuleController{
     public Initialize getInitializeCommand() {
         int maxTeams = this.game.getMaxTeams();
         System.out.println("teams: " + maxTeams);
+        int team = random.nextInt(maxTeams + 1);
+        home = getTeamBase(team).getLocation();
         return new Initialize().setName("ReactiveAgent").setTeam(
-                random.nextInt(maxTeams + 1));
+                team);
         //ADICIONAR AQUI BOTS PARA CADA EQUIPA???
     }
     
@@ -178,6 +189,11 @@ public class ReactiveAgent extends UT2004BotModuleController{
                 || (shouldTakeFlag && ctf.isOurFlagDropped()) || (shouldTakeFlag && ctf.isEnemyFlagHome())
                 || (shouldTakeFlag && ctf.isEnemyFlagDropped())) && enemyFlag != null && !senses.isBeingDamaged()) {
             this.stateTakeFlag();
+        }
+       
+       
+       if (shouldReturnBaseFlag && ctf.isBotCarryingEnemyFlag() && (enemyFlag != null || ourFlag != null)) {
+            this.stateReturnBaseFlag();
         }
     }
     
@@ -232,6 +248,25 @@ public class ReactiveAgent extends UT2004BotModuleController{
         }
        
         body.getCommunication().sendGlobalTextMessage("Found the flag of team " + event.getObject().getTeam());
+    }
+    
+    protected void stateReturnBaseFlag() throws IllegalStateException {
+   
+        if (ourFlag != null) {
+            //log.log(Level.INFO, "OUR FLAG:{0}", ourFlag);
+            move.moveTo(home);
+        }
+    }
+    
+    public NavPoint getTeamBase(int team) {
+        String flagBaseStr = "x" + teamColors[team] + "FlagBase0";
+
+        for (NavPoint navpoint : bot.getWorldView().getAll(NavPoint.class).values()) {
+            if (navpoint.getId().getStringId().contains(flagBaseStr)) {
+                return navpoint;
+            }
+        }
+        throw new IllegalStateException("Unable to find base for " + teamColors[team] + " team.");
     }
     
     
