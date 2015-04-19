@@ -25,7 +25,19 @@ import cz.cuni.amis.pogamut.base3d.worldview.object.event.WorldObjectAppearedEve
 import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotModuleController;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.ItemType;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.ASSAULT_RIFLE;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.BIO_RIFLE;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.FLAK_CANNON;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.LIGHTNING_GUN;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.LINK_GUN;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.MINIGUN;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.ROCKET_LAUNCHER;
+import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.SHOCK_RIFLE;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Rotate;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Stop;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.StopShooting;
 
 
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.BotKilled;
@@ -56,7 +68,7 @@ import java.util.Set;
  * @author Miguel
  */
 
-public class ReactiveAgent extends UT2004BotModuleController{
+public class ReactiveAgentBlue extends UT2004BotModuleController{
     
     protected TabooSet<Item> tabooItems = null;
     
@@ -66,17 +78,22 @@ public class ReactiveAgent extends UT2004BotModuleController{
     
     public boolean shouldTakeFlag = true;
     
+    public boolean shouldEngage = true;
     public boolean shouldReturnBaseFlag = true;
-    
+    protected boolean runningToPlayer = false;
     private boolean takeBack = false;
     
     private FlagInfo ourFlag;
     private FlagInfo enemyFlag;
-    
+    protected Player enemy = null;
     private Location home;
     
     protected int notMoving;
-    
+    protected State previousState = State.OTHER;
+    protected static enum State {
+
+        ENGAGE, RETURN_BASE_FLAG, TAKE_FLAG, OTHER
+    }
     
     private void randomStrafe() {
         switch (random.nextInt(4)) {
@@ -167,7 +184,15 @@ public class ReactiveAgent extends UT2004BotModuleController{
     @Override
     public void prepareBot(UT2004Bot bot) {
         
-        
+        weaponPrefs.addGeneralPref(MINIGUN, true);
+        weaponPrefs.addGeneralPref(LINK_GUN, false);
+        weaponPrefs.addGeneralPref(LIGHTNING_GUN, true);
+        weaponPrefs.addGeneralPref(SHOCK_RIFLE, true);
+        weaponPrefs.addGeneralPref(ROCKET_LAUNCHER, true);
+        weaponPrefs.addGeneralPref(LINK_GUN, true);
+        weaponPrefs.addGeneralPref(ASSAULT_RIFLE, true);
+        weaponPrefs.addGeneralPref(FLAK_CANNON, true);
+        weaponPrefs.addGeneralPref(BIO_RIFLE, true);
     }
     
     
@@ -175,10 +200,11 @@ public class ReactiveAgent extends UT2004BotModuleController{
     public Initialize getInitializeCommand() {
         int maxTeams = this.game.getMaxTeams();
         System.out.println("teams: " + maxTeams);
-        int team = random.nextInt(maxTeams - 1);
+        int team = 1;
         home = getTeamBase(team).getLocation();
-        return new Initialize().setName("ReactiveAgent").setTeam(
+        return new Initialize().setName("ReactiveAgentBlue").setTeam(
                 team);
+        
         //ADICIONAR AQUI BOTS PARA CADA EQUIPA???
     }
     
@@ -206,7 +232,7 @@ public class ReactiveAgent extends UT2004BotModuleController{
         // global anti-stuck?
         if (!info.isMoving()) {
             ++notMoving;
-            if (notMoving > 2) {
+            if (notMoving > 4) {
                 // we're stuck - reset the bot's mind
                 randomStrafe();
                 return;
@@ -220,8 +246,19 @@ public class ReactiveAgent extends UT2004BotModuleController{
         }
        
        
-       if (shouldReturnBaseFlag && ctf.isBotCarryingEnemyFlag() && (enemyFlag != null || ourFlag != null)) {
+       if (shouldReturnBaseFlag && ctf.isBotCarryingEnemyFlag() && (enemyFlag != null || ourFlag != null) && !senses.isBeingDamaged()) {
             this.stateReturnBaseFlag();
+            return;
+        }
+       
+        if (shouldEngage && players.canSeeEnemies() && weaponry.hasLoadedWeapon()) {
+            this.stateEngage();
+            return;
+        }
+        
+        if (senses.isBeingDamaged()) {
+            this.stateHit();
+            return;
         }
     }
     
@@ -242,7 +279,7 @@ public class ReactiveAgent extends UT2004BotModuleController{
     }
     
     protected void stateTakeFlag() {
-        
+         previousState = State.TAKE_FLAG;
 
         if(takeBack) {
             if (ourFlag != null) {
@@ -280,6 +317,8 @@ public class ReactiveAgent extends UT2004BotModuleController{
     
     protected void stateReturnBaseFlag() throws IllegalStateException {
    
+        previousState = State.RETURN_BASE_FLAG;
+        
         if (ourFlag != null) {
             //log.log(Level.INFO, "OUR FLAG:{0}", ourFlag);
             move.moveTo(home);
@@ -297,6 +336,63 @@ public class ReactiveAgent extends UT2004BotModuleController{
         throw new IllegalStateException("Unable to find base for " + teamColors[team] + " team.");
     }
     
+    protected void stateEngage() {
+       
+
+        boolean shooting = false;
+        double distance = Double.MAX_VALUE;
+
+        //body.getCommunication().sendTeamBubbleMessage(m.toString(), -1);
+
+        // 1) pick new enemy if the old one has been lost
+        if ( previousState != State.ENGAGE || enemy == null || !enemy.isVisible()) {
+            // pick new enemy
+            enemy = players.getNearestVisiblePlayer(players.getVisibleEnemies()
+                    .values());
+            if (enemy == null) {
+                log.info("Can't see any enemies... ???");
+                return;
+            }
+            if (info.isShooting()){ // stop shooting
+                getAct().act(new StopShooting());
+            }
+            runningToPlayer = false;
+        }
+
+        if (enemy != null) {
+            
+            distance = info.getLocation().getDistance(enemy.getLocation());
+
+            //  should shoot?
+            if (shoot.shoot(weaponPrefs, enemy) != null) {
+                log.info("Shooting at enemy!!!");
+                shooting = true;
+            }
+            
+        }
+
+        //  if enemy is far - run to him
+        int decentDistance = Math.round(random.nextFloat() * 800) + 200;
+        
+        if (!enemy.isVisible() || !shooting || decentDistance < distance) {
+            if (!runningToPlayer) {
+                //navigation.getPathExecutor().followPath(navigation.getPathPlanner().computePath(bot, enemy));
+                navigation.navigate(players.getNearestVisibleEnemy());
+                runningToPlayer = true;
+            }
+        } else {
+            runningToPlayer = false;
+            navigation.getPathExecutor().stop();
+            getAct().act(new Stop());
+        }
+        
+        previousState = State.ENGAGE;
+    }
     
+     protected void stateHit() {
+
+        getAct().act(new Rotate().setAmount(32000));
+        previousState = State.OTHER;
+    }
 }
     
