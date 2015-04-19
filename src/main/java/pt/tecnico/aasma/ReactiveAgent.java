@@ -47,7 +47,7 @@ import cz.cuni.amis.utils.flag.FlagListener;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import org.jcp.xml.dsig.internal.dom.Utils;
+//import org.jcp.xml.dsig.internal.dom.Utils;
 
 
 
@@ -75,8 +75,26 @@ public class ReactiveAgent extends UT2004BotModuleController{
     
     private Location home;
     
+    protected int notMoving;
     
     
+    private void randomStrafe() {
+        switch (random.nextInt(4)) {
+            case 0:
+                body.getLocomotion().strafeLeft(200.0);
+                break;
+            case 1:
+                body.getLocomotion().strafeRight(200.0);
+                break;
+            case 2:
+                body.getLocomotion().moveContinuos();
+                break;
+            case 3:
+                body.getLocomotion().turnHorizontal(180);
+                
+        }
+        
+    }
     /**
      * Listener called when someone/something bumps into the bot. The bot
      * responds by moving in the opposite direction than the bump come from.
@@ -157,7 +175,7 @@ public class ReactiveAgent extends UT2004BotModuleController{
     public Initialize getInitializeCommand() {
         int maxTeams = this.game.getMaxTeams();
         System.out.println("teams: " + maxTeams);
-        int team = random.nextInt(maxTeams + 1);
+        int team = random.nextInt(maxTeams - 1);
         home = getTeamBase(team).getLocation();
         return new Initialize().setName("ReactiveAgent").setTeam(
                 team);
@@ -184,6 +202,16 @@ public class ReactiveAgent extends UT2004BotModuleController{
     @Override
     @SuppressWarnings("empty-statement")
     public void logic() throws PogamutException {
+        
+        // global anti-stuck?
+        if (!info.isMoving()) {
+            ++notMoving;
+            if (notMoving > 2) {
+                // we're stuck - reset the bot's mind
+                randomStrafe();
+                return;
+            }
+        }
         
        if ((shouldTakeFlag && !ctf.isOurTeamCarryingEnemyFlag() && !ctf.isBotCarryingEnemyFlag()
                 || (shouldTakeFlag && ctf.isOurFlagDropped()) || (shouldTakeFlag && ctf.isEnemyFlagHome())
