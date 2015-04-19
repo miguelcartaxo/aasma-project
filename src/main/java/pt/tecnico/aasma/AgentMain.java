@@ -32,7 +32,7 @@ public class AgentMain {
                 ReactiveAgentRed.class, // which UT2004BotController it should instantiate
                 "ReactiveAgentRed" // what name the runner should be using
                 ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
-                .startAgents(4);
+                .startAgents(10);
         
 //        new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
 //                ReactiveAgentBlue.class, // which UT2004BotController it should instantiate

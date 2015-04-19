@@ -20,6 +20,7 @@ package pt.tecnico.aasma;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.ObjectClassEventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.object.event.WorldObjectUpdatedEvent;
+import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.base3d.worldview.object.event.WorldObjectAppearedEvent;
 import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
@@ -35,6 +36,7 @@ import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.
 import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.ROCKET_LAUNCHER;
 import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.SHOCK_RIFLE;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Move;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Rotate;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Stop;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.StopShooting;
@@ -78,11 +80,11 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
     
     public boolean shouldTakeFlag = true;
     
-    public boolean shouldEngage = true;
+    public boolean shouldFight = true;
     public boolean shouldReturnBaseFlag = true;
     protected boolean runningToPlayer = false;
     private boolean takeBack = false;
-    
+    public boolean shouldGrabItems = true;
     private FlagInfo ourFlag;
     private FlagInfo enemyFlag;
     protected Player enemy = null;
@@ -92,23 +94,24 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
     protected State previousState = State.OTHER;
     protected static enum State {
 
-        ENGAGE, RETURN_BASE_FLAG, TAKE_FLAG, OTHER
+        FIGHT, RETURN_BASE_FLAG, TAKE_FLAG, GRAB, OTHER
     }
     
     private void randomStrafe() {
-        switch (random.nextInt(4)) {
+        switch (random.nextInt(3)) {
             case 0:
-                body.getLocomotion().strafeLeft(200.0);
+                body.getLocomotion().strafeLeft(300.0);
                 break;
             case 1:
-                body.getLocomotion().strafeRight(200.0);
+                body.getLocomotion().strafeRight(300.0);
                 break;
-            case 2:
+           /* case 2:
                 body.getLocomotion().moveContinuos();
-                break;
-            case 3:
-                body.getLocomotion().turnHorizontal(180);
+                break;*/
+            case 2:
+                body.getLocomotion().turnHorizontal(random.nextInt(60));
                 
+       
         }
         
     }
@@ -141,7 +144,7 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
     @ObjectClassEventListener(eventClass = WorldObjectAppearedEvent.class, objectClass = Player.class)
     protected void playerAppeared(WorldObjectAppearedEvent<Player> event) {
         // greet player when he appears
-        body.getCommunication().sendGlobalTextMessage("F U " + event.getObject().getName() + "!");
+        body.getCommunication().sendGlobalTextMessage("Hello " + event.getObject().getName() + "!");
     }
     
     /**
@@ -199,8 +202,9 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
     @Override
     public Initialize getInitializeCommand() {
         int maxTeams = this.game.getMaxTeams();
+
         System.out.println("teams: " + maxTeams);
-        int team = 0;
+        int team = random.nextInt(maxTeams);
         home = getTeamBase(team).getLocation();
         return new Initialize().setName("ReactiveAgentRed").setTeam(
                 team);
@@ -250,13 +254,19 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
             return;
         }
        
-        if (shouldEngage && players.canSeeEnemies() && weaponry.hasLoadedWeapon()) {
-            this.stateEngage();
+        if (shouldFight && players.canSeeEnemies() && weaponry.hasLoadedWeapon()) {
+            this.stateFight();
             return;
         }
         
         if (senses.isBeingDamaged()) {
             this.stateHit();
+            return;
+        }
+        
+        if (shouldGrabItems && !items.getVisibleItems().isEmpty()) {
+            stateSeeItem();
+            previousState = State.GRAB;
             return;
         }
     }
@@ -335,7 +345,7 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
         throw new IllegalStateException("Unable to find base for " + teamColors[team] + " team.");
     }
     
-    protected void stateEngage() {
+    protected void stateFight() {
        
 
         boolean shooting = false;
@@ -344,7 +354,7 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
         //body.getCommunication().sendTeamBubbleMessage(m.toString(), -1);
 
         // 1) pick new enemy if the old one has been lost
-        if ( previousState != State.ENGAGE || enemy == null || !enemy.isVisible()) {
+        if ( previousState != State.FIGHT || enemy == null || !enemy.isVisible()) {
             // pick new enemy
             enemy = players.getNearestVisiblePlayer(players.getVisibleEnemies()
                     .values());
@@ -385,7 +395,7 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
             getAct().act(new Stop());
         }
         
-        previousState = State.ENGAGE;
+        previousState = State.FIGHT;
     }
     
      protected void stateHit() {
@@ -393,5 +403,24 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
         getAct().act(new Rotate().setAmount(32000));
         previousState = State.OTHER;
     }
+     
+     protected void stateSeeItem() {
+        
+         body.getCommunication().sendGlobalTextMessage("I got to get that item");
+        log.info("I got to get that item");
+        if (previousState != State.GRAB) {
+            item = DistanceUtils.getNearest(items.getVisibleItems().values(),
+                    info.getLocation());
+           if (item.getLocation().getDistance(info.getLocation()) < 300) {
+                getAct().act(new Move().setFirstLocation(item.getLocation()));
+            } else {
+                navigation.navigate(item);
+                //pathExecutor.followPath(pathPlanner.computePath(bot, item));
+            }
+           
+        }
+
+    }
 }
+
     
