@@ -109,7 +109,7 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
                 body.getLocomotion().moveContinuos();
                 break;*/
             case 2:
-                body.getLocomotion().turnHorizontal(random.nextInt(60));
+                body.getLocomotion().turnHorizontal(random.nextInt(100));
                 
        
         }
@@ -206,8 +206,9 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
         System.out.println("teams: " + maxTeams);
         int team = random.nextInt(maxTeams);
         home = getTeamBase(team).getLocation();
-        return new Initialize().setName("ReactiveAgentRed").setTeam(
-                team);
+//        return new Initialize().setName("ReactiveAgentRed").setTeam(
+//                team);
+         return new Initialize().setName("ReactiveAgent");
         //ADICIONAR AQUI BOTS PARA CADA EQUIPA???
     }
     
@@ -416,6 +417,7 @@ public class ReactiveAgentRed extends UT2004BotModuleController{
             } else {
                 navigation.navigate(item);
                 //pathExecutor.followPath(pathPlanner.computePath(bot, item));
+               
             }
            
         }

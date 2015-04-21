@@ -16,6 +16,9 @@
  */
 package pt.tecnico.aasma;
 
+import cz.cuni.amis.pogamut.base.agent.impl.AgentId;
+import cz.cuni.amis.pogamut.ut2004.agent.module.sensor.AgentInfo;
+import cz.cuni.amis.pogamut.ut2004.bot.params.UT2004BotParameters;
 import cz.cuni.amis.pogamut.ut2004.factory.guice.remoteagent.UT2004BotFactory;
 import cz.cuni.amis.pogamut.ut2004.utils.UT2004BotRunner;
 import cz.cuni.amis.utils.exception.PogamutException;
@@ -32,7 +35,17 @@ public class AgentMain {
                 ReactiveAgentRed.class, // which UT2004BotController it should instantiate
                 "ReactiveAgentRed" // what name the runner should be using
                 ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
-                .startAgents(10);
+                .startAgents(new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_BLUE),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_BLUE),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_BLUE),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_BLUE),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_BLUE),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_RED),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_RED),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_RED),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_RED),
+                        new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_RED)
+                        );
         
 //        new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
 //                ReactiveAgentBlue.class, // which UT2004BotController it should instantiate
