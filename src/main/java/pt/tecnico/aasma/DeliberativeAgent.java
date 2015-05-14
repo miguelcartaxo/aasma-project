@@ -16,14 +16,21 @@
  */
 package pt.tecnico.aasma;
 
+import static cz.cuni.amis.pogamut.base.agent.navigation.PathExecutorState.STUCK;
+import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutorState;
 import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
+import cz.cuni.amis.pogamut.ut2004.agent.navigation.stuckdetector.UT2004TimeStuckDetector;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotModuleController;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.ItemType;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbcommands.Initialize;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.ConfigChange;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInfo;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.GameInfo;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.InitedMessage;
 import cz.cuni.amis.utils.exception.PogamutException;
+import cz.cuni.amis.utils.flag.FlagListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -34,6 +41,7 @@ import pt.tecnico.aasma.beliefs.SeeingWeapon;
 import pt.tecnico.aasma.desires.Desire;
 import pt.tecnico.aasma.desires.GrabWeapon;
 import pt.tecnico.aasma.desires.Intention;
+
 
 /**
  *
@@ -75,6 +83,31 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
         return new Initialize().setName("DeliberativeAgent");
     }
     
+    @Override
+    public void botInitialized(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init) {
+
+//        pathExecutor.addStuckDetector(new UT2004TimeStuckDetector(bot, 3.0, 10.0));       // if the bot does not move for 3 seconds, considered that it is stuck
+//
+//        pathExecutor.getState().addStrongListener(new FlagListener<IPathExecutorState>() {
+//            @Override
+//            public void flagChanged(IPathExecutorState changedValue) {
+//                switch (changedValue.getState()) {
+//                    /*case PATH_COMPUTATION_FAILED:
+//                     // if path computation fails to whatever reason, just try another navpoint
+//                     case TARGET_REACHED:
+//                     break;*/
+//
+//                    case STUCK:
+//                        //body.getCommunication().sendGlobalTextMessage("STUUUUUUUUUUUUUUUUUUUUUCK!!!!!!!!");
+//                        // if we get stuck, we will try other goal                	
+//                        currentDesires.remove(currentDesires.last());
+//                        filter(currentBeliefs, currentDesires, currentIntention);
+//                        createAndExecutePlan(currentBeliefs, currentIntention);
+//                        break;
+//                }
+//            }
+//        });
+    }
     
     /**
     * BDI ALGORITHM
@@ -92,7 +125,7 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
         
         
         Collection<NavPoint> visiblePoints = DistanceUtils.getDistanceSorted(this.navPoints.getVisibleNavPoints().values(), this.info.getLocation());
-        NavPoint nearestHealth = null;
+        //NavPoint nearestHealth = null;
        // NavPoint nearestAmmo = null;
         if (visiblePoints != null) {
             for (NavPoint navp : visiblePoints) {
