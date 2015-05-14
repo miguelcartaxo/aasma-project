@@ -32,7 +32,7 @@ public class AgentMain {
     public static void main(String args[]) throws PogamutException {
         
         new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
-                ReactiveAgentRed.class, // which UT2004BotController it should instantiate
+                ReactiveAgentBlue.class, // which UT2004BotController it should instantiate
                 "ReactiveAgentRed" // what name the runner should be using
                 ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
                 .startAgents(new UT2004BotParameters().setAgentId(new AgentId("SPOSH-CTF-Bot-Blue")).setTeam(AgentInfo.TEAM_BLUE),
