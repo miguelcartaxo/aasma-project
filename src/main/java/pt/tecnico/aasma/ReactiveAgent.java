@@ -17,6 +17,7 @@
 package pt.tecnico.aasma;
 
 
+import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutorState;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.ObjectClassEventListener;
 import cz.cuni.amis.pogamut.base.communication.worldview.object.event.WorldObjectUpdatedEvent;
@@ -24,9 +25,11 @@ import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.base3d.worldview.object.event.WorldObjectAppearedEvent;
 import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
+import cz.cuni.amis.pogamut.ut2004.agent.navigation.UT2004PathAutoFixer;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotModuleController;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.ItemType;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType;
 import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.ASSAULT_RIFLE;
 import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.BIO_RIFLE;
 import static cz.cuni.amis.pogamut.ut2004.communication.messages.UT2004ItemType.FLAK_CANNON;
@@ -70,7 +73,7 @@ import java.util.Set;
  * @author Miguel
  */
 
-public class ReactiveAgent extends UT2004BotModuleController{
+public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
     
     protected TabooSet<Item> tabooItems = null;
     
@@ -89,6 +92,8 @@ public class ReactiveAgent extends UT2004BotModuleController{
     private FlagInfo enemyFlag;
     protected Player enemy = null;
     private Location home;
+    
+    private UT2004PathAutoFixer autoFixer;
     
     protected int notMoving;
     protected State previousState = State.OTHER;
@@ -184,20 +189,56 @@ public class ReactiveAgent extends UT2004BotModuleController{
      * Initialize all necessary variables here, before the bot actually receives
      * anything from the environment.
      */
+//    @Override
+//    public void prepareBot(UT2004Bot bot) {
+//        
+//        weaponPrefs.addGeneralPref(MINIGUN, true);
+//        weaponPrefs.addGeneralPref(LINK_GUN, false);
+//        weaponPrefs.addGeneralPref(LIGHTNING_GUN, true);
+//        weaponPrefs.addGeneralPref(SHOCK_RIFLE, true);
+//        weaponPrefs.addGeneralPref(ROCKET_LAUNCHER, true);
+//        weaponPrefs.addGeneralPref(LINK_GUN, true);
+//        weaponPrefs.addGeneralPref(ASSAULT_RIFLE, true);
+//        weaponPrefs.addGeneralPref(FLAK_CANNON, true);
+//        weaponPrefs.addGeneralPref(BIO_RIFLE, true);
+//    }
     @Override
     public void prepareBot(UT2004Bot bot) {
-        
-        weaponPrefs.addGeneralPref(MINIGUN, true);
-        weaponPrefs.addGeneralPref(LINK_GUN, false);
-        weaponPrefs.addGeneralPref(LIGHTNING_GUN, true);
-        weaponPrefs.addGeneralPref(SHOCK_RIFLE, true);
-        weaponPrefs.addGeneralPref(ROCKET_LAUNCHER, true);
-        weaponPrefs.addGeneralPref(LINK_GUN, true);
-        weaponPrefs.addGeneralPref(ASSAULT_RIFLE, true);
-        weaponPrefs.addGeneralPref(FLAK_CANNON, true);
-        weaponPrefs.addGeneralPref(BIO_RIFLE, true);
+        tabooItems = new TabooSet<Item>(bot);
+
+	    autoFixer = new UT2004PathAutoFixer(bot, navigation.getPathExecutor(), fwMap, aStar, navBuilder); // auto-removes wrong navigation links between navpoints
+
+		// listeners
+		navigation.getPathExecutor().getState().addListener(
+				new FlagListener<IPathExecutorState>() {
+					@Override
+					public void flagChanged(IPathExecutorState changedValue) {
+						switch (changedValue.getState()) {
+							case STUCK:
+								navigation.navigate(ctf.getOurBase());
+                                                                 body.getCommunication().sendGlobalTextMessage("IM STUCK IN PREPARE BOT!");
+								break;
+
+							default:
+								System.out.println("WHATS THIS!!");
+								break;
+						}
+					}
+				});
+        // DEFINE WEAPON PREFERENCES
+		weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, false);
+		weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.LINK_GUN, false);
+		weaponPrefs.addGeneralPref(UT2004ItemType.LIGHTNING_GUN, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.SHOCK_RIFLE, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.ROCKET_LAUNCHER, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.LINK_GUN, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.ASSAULT_RIFLE, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.FLAK_CANNON, false);
+		weaponPrefs.addGeneralPref(UT2004ItemType.FLAK_CANNON, true);
+		weaponPrefs.addGeneralPref(UT2004ItemType.BIO_RIFLE, true);
     }
-    
+
     
     @Override
     public Initialize getInitializeCommand() {
@@ -236,21 +277,23 @@ public class ReactiveAgent extends UT2004BotModuleController{
         // global anti-stuck?
         if (!info.isMoving()) {
             ++notMoving;
-            if (notMoving > 4) {
+            if (notMoving > 25) {
                 // we're stuck - reset the bot's mind
-                randomStrafe();
+                //randomStrafe();
+                navigation.navigate(ctf.getOurBase());
+                body.getCommunication().sendGlobalTextMessage("IM STUCK IN LOGIC!");
                 return;
             }
         }
-        
+      
        if ((shouldTakeFlag && !ctf.isOurTeamCarryingEnemyFlag() && !ctf.isBotCarryingEnemyFlag()
                 || (shouldTakeFlag && ctf.isOurFlagDropped()) || (shouldTakeFlag && ctf.isEnemyFlagHome())
                 || (shouldTakeFlag && ctf.isEnemyFlagDropped())) && enemyFlag != null && !senses.isBeingDamaged()) {
             this.stateTakeFlag();
         }
        
-       
-       if (shouldReturnBaseFlag && ctf.isBotCarryingEnemyFlag() && (enemyFlag != null || ourFlag != null) && !senses.isBeingDamaged()) {
+         
+        if (shouldReturnBaseFlag && ctf.isBotCarryingEnemyFlag() && (enemyFlag != null || ourFlag != null) && !senses.isBeingDamaged()) {
             this.stateReturnBaseFlag();
             return;
         }
@@ -294,12 +337,12 @@ public class ReactiveAgent extends UT2004BotModuleController{
         if(takeBack) {
             if (ourFlag != null) {
                 if (ourFlag.isVisible()) {
-                    move.moveTo(ourFlag.getLocation());
+                    navigation.navigate(ourFlag.getLocation());
                 }
             }
         } else if (enemyFlag != null) {
             if (enemyFlag.isVisible()) {
-                move.moveTo(enemyFlag.getLocation());
+               navigation.navigate(enemyFlag.getLocation());
             }
         }
 
