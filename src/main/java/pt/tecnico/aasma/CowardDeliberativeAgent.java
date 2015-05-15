@@ -332,9 +332,9 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
 //                case "Bored":
 //                    newDesires.add(new GoToBase(enemyBase, true, 4));
 //                    break;
-//                case "CarryingFlag":
-//                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
-//                    break;
+                case "CarryingFlag":
+                    newDesires.add(new GoToBase(ourBase, false, 20));
+                    break;
                 
                 case "EnemyCarryingFlag":
                     if (((CarryingFlag) b).getCarrier() == null) {

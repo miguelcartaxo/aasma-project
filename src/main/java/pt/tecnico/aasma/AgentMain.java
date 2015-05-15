@@ -13,11 +13,11 @@ import cz.cuni.amis.utils.exception.PogamutException;
 public class AgentMain {
     
     public enum AgentType {
-    REACTIVE , DELIBERATIVE, HYBRID
+    REACTIVE , BRAVE_DELIBERATIVE, COWARD_DELIBERATIVE, HYBRID
     }
     public static void main(String args[]) throws PogamutException {
         
-        AgentType type = AgentType.DELIBERATIVE;
+        AgentType type = AgentType. COWARD_DELIBERATIVE;
         
         if(type == AgentType.REACTIVE){
                 new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
@@ -36,20 +36,25 @@ public class AgentMain {
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED)
                                 );
               
-        } else if(type == AgentType.DELIBERATIVE){
+        } else if(type == AgentType.BRAVE_DELIBERATIVE){
               new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
                         BraveDeliberativeAgent.class, // which UT2004BotController it should instantiate
-                        "DeliberativeAgent" // what name the runner should be using
+                        "BraveDeliberativeAgent" // what name the runner should be using
                         ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
                         .startAgents(new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED),
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED),
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
+                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE)
+                                );
+              
+        } else if (type == AgentType.COWARD_DELIBERATIVE){
+               new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
+                        CowardDeliberativeAgent.class, // which UT2004BotController it should instantiate
+                        "CowardDeliberativeAgent" // what name the runner should be using
+                        ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
+                        .startAgents(new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED),
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED)
                                 );
         } else if (type == AgentType.HYBRID){
@@ -68,6 +73,7 @@ public class AgentMain {
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
                                 new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED)
                                 );
+        
         } else{
             System.out.println("I DONT HAVE AN AGENT TYPE");
         }

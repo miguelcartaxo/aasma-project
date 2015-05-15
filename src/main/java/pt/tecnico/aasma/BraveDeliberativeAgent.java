@@ -322,15 +322,15 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                     break;
                 
                 case "SeeingEnemy":
-                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 15));
+                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 16));
                     break;
                     
 //                case "Bored":
 //                    newDesires.add(new GoToBase(enemyBase, true, 4));
 //                    break;
-//                case "CarryingFlag":
-//                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
-//                    break;
+                case "CarryingFlag":
+                    newDesires.add(new GoToBase(ourBase, false, 14));
+                    break;
                 
                 case "EnemyCarryingFlag":
                     if (((CarryingFlag) b).getCarrier() == null) {
@@ -348,9 +348,9 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                 case "OurFlagDropped":
                     if (((FlagDropped) b).getFlag().getLocation() == null) {
                         if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
-                            newDesires.add(new GoToBase(enemyBase, true, 5));
+                            newDesires.add(new GoToBase(enemyBase, true, 8));
                         } else {
-                            newDesires.add(new GoToBase(ourBase, false, 5));
+                            newDesires.add(new GoToBase(ourBase, false, 8));
                         }
                     } else {
                         
@@ -361,9 +361,9 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                 case "EnemyFlagDropped":
                     if (((FlagDropped) b).getFlag().getLocation() == null) {
                         if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
-                            newDesires.add(new GoToBase(enemyBase, true, 5));
+                            newDesires.add(new GoToBase(enemyBase, true, 8));
                         } else {
-                            newDesires.add(new GoToBase(ourBase, false, 5));
+                            newDesires.add(new GoToBase(ourBase, false, 8));
                         }
                     } else {
                         log.info("Belief: Enemy flag dropped and I see it!!");
@@ -395,10 +395,10 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
 
                     if (beliefs.contains(new SeeingHealthPack(null))) {
                         SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
-                        newDesires.add(new GrabHealth(bel.getPoint(), 15));
+                        newDesires.add(new GrabHealth(bel.getPoint(), 7));
                         lastHealthItem = bel.getPoint();
                     } else if (lastHealthItem != null) {
-                        newDesires.add(new GrabHealth(lastHealthItem, 15));
+                        newDesires.add(new GrabHealth(lastHealthItem, 7));
                     }
                     break;
                 case "LowAmmoBelief":
