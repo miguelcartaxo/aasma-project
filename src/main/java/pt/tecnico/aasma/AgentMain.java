@@ -38,7 +38,7 @@ public class AgentMain {
               
         } else if(type == AgentType.DELIBERATIVE){
               new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
-                        DeliberativeAgent.class, // which UT2004BotController it should instantiate
+                        BraveDeliberativeAgent.class, // which UT2004BotController it should instantiate
                         "DeliberativeAgent" // what name the runner should be using
                         ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
                         .startAgents(new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),

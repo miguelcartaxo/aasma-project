@@ -72,7 +72,7 @@ import pt.tecnico.aasma.desires.KillEnemy;
  *
  * @author Miguel
  */
-public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
+public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     
     private boolean executingPlan = false;
     
@@ -317,42 +317,42 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             switch (b.getName()) {
                  case "BeingDamaged":
                     if (((BeingDamaged) b).byEnemy()) {
-                        newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 10));
+                        if(info.getLocation() == ourBase.getLocation()){
+                            newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 19));
+                        } else{
+                            newDesires.add(new GoToBase(ourBase, false, 19));
+                        } 
                     }
                     break;
                 
                 case "SeeingEnemy":
-                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 5));
+                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 2));
                     break;
                     
 //                case "Bored":
 //                    newDesires.add(new GoToBase(enemyBase, true, 4));
 //                    break;
-                case "CarryingFlag":
-                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
-                    break;
+//                case "CarryingFlag":
+//                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
+//                    break;
                 
                 case "EnemyCarryingFlag":
                     if (((CarryingFlag) b).getCarrier() == null) {
-                        newDesires.add(new GoToBase(enemyBase, true, 5));
+                        newDesires.add(new GoToBase(enemyBase, true, 10));
                     } else {
                         log.info("I see him with my flag!!");
-                        newDesires.add(new GoToBase(ourBase, true, 1));
-                        //newDesires.add(new KillEnemyDesire(((CarryingFlagBelief) b).getCarrier(), 9));
+                        newDesires.add(new KillEnemy(((CarryingFlag) b).getCarrier(), 2));
                     }
                     break;
                 
                 case "FriendCarryingFlag":
-                    newDesires.add(new GoToBase(ourBase, true, 6));
+                    newDesires.add(new GoToBase(ourBase, false, 6));
                     break;
                 
                 case "OurFlagDropped":
                     if (((FlagDropped) b).getFlag().getLocation() == null) {
-                        if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
-                            newDesires.add(new GoToBase(enemyBase, true, 4));
-                        } else {
                             newDesires.add(new GoToBase(ourBase, false, 4));
-                        }
+                        
                     } else {
                         
                         newDesires.add(new CaptureOwnFlag(((FlagDropped) b).getFlag(), 8));
@@ -361,36 +361,28 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                     
                 case "EnemyFlagDropped":
                     if (((FlagDropped) b).getFlag().getLocation() == null) {
-                        if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
-                            newDesires.add(new GoToBase(enemyBase, false, 1));
-                        } else {
-                            newDesires.add(new GoToBase(ourBase, true, 1));
-                        }
+                            newDesires.add(new GoToBase(ourBase, false, 4));
                     } else {
                         log.info("Belief: Enemy flag dropped and I see it!!");
-                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 7));
+                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 8));
                     }
                     break;
                 case "EnemyFlagInBase":
                     if (!beliefs.contains(new CarryingFlag())) {
-                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 2));
+                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 1));
                     }
-                    break;
-                    
-                case "FlagInBase":
-                    newDesires.add(new GoToBase(ourBase, true, 10));
                     break;
                 
                 case "SeeingWeapon":
-                    newDesires.add(new GrabWeapon(((SeeingWeapon) b).getPoint(), 3));
+                    newDesires.add(new GrabWeapon(((SeeingWeapon) b).getPoint(), 6));
                     break;
                 
                 case "SeeingAmmoPack":
                     int priority = 0;
                     if (beliefs.contains(new LowAmmo())) {
-                        priority = 11;
+                        priority = 9;
                     } else {
-                        priority = 6;
+                        priority = 1;
                     }
                     NavPoint firstPacket = ((SeeingAmmoPack) b).getPoint();
                     newDesires.add(new GrabAmmo(firstPacket, priority));
@@ -400,14 +392,14 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
 
                     if (beliefs.contains(new SeeingHealthPack(null))) {
                         SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
-                        newDesires.add(new GrabHealth(bel.getPoint(), 12));
+                        newDesires.add(new GrabHealth(bel.getPoint(), 15));
                         lastHealthItem = bel.getPoint();
                     } else if (lastHealthItem != null) {
-                        newDesires.add(new GrabHealth(lastHealthItem, 12));
+                        newDesires.add(new GrabHealth(lastHealthItem, 15));
                     }
                     break;
                 case "LowAmmoBelief":
-                    newDesires.add(new ChangeWeapon(11));
+                    newDesires.add(new ChangeWeapon(18));
                     break;
                     
              }
@@ -431,6 +423,7 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
         switch (intention.getName()) {
             
             case "KillEnemy":
+                log.info("Plan: Kill! Kill! Kill!");
                 Player p = (Player) intention.getTarget();
     
                 if (p != null) {
@@ -442,13 +435,13 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                 
             case "CaptureEnemyFlag":
                 if (beliefs.contains(new CarryingFlag())) {
-                    log.info("Executing plan: I have the flag and I'm returning to base!");
+                    log.info("Plan: I have the flag! Returning to base!");
                     navigation.navigate(ourBase);
                 } else if (beliefs.contains(new FlagInBase(enemyBase, true))) {
-                    log.info("Executing plan: Flag at the base, going to get it");
+                    log.info("Plan: Flag at the enemy base, going to get it");
                     navigation.navigate(enemyBase);
                 } else if (beliefs.contains(new FlagDropped(enemyFlag, true))) {
-                    log.info("Executing plan: Enemy flag dropped, going to get it");
+                    log.info("Plan: Enemy flag dropped, going to get it");
                     navigation.navigate(((FlagInfo) intention.getTarget()).getLocation());
                 }
                 break;
@@ -456,35 +449,39 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             case "CaptureOurFlag":
                 Location loc = ((FlagInfo) intention.getTarget()).getLocation();
                 if (loc != null) {
-                    log.info("Executing plan: Capturing our flag");
+                    log.info("Plan: Capturing our flag");
                     navigation.navigate(loc);
                 }
                 break;
             case "GoToEnemyBase":
-                log.info("Executing plan: Going to enemy base");
+                log.info("Plan: Going to enemy base");
                 NavPoint target = (NavPoint) intention.getTarget();
               
                 navigation.navigate(target);
                 break;
             case "GoToOurBase":
                 
-                log.info("Executing plan: Going to my base");
+                log.info("Plan: Going to my base");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
         
-            case "GrabWeapon": 
+            case "GrabWeapon":
+                log.info("Plan: Grabing Weapon");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
             case "GrabHealth":
+                log.info("Plan: Grabing Health");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
             case "GrabAmmo":
+                log.info("Plan: Grabing Ammo");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
             case "ChangeWeapon":
+                log.info("Plan: Changing Weapon");
                 if (intention.getTarget() == null) {
                     Object[] loadedWeapons = weaponry.getLoadedWeapons().keySet().toArray();
                     weaponry.changeWeapon((ItemType) loadedWeapons[random.nextInt(loadedWeapons.length)]);
