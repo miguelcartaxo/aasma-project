@@ -75,6 +75,6 @@ public class Message{
     @Override
     public String toString() {
         //ex: HELP;BotName:1,2,3
-        return msg + ";" + botName + ":" + location.x + "," +location.y + "," + location.z;
+        return botName + ":" + location.x + "," +location.y + "," + location.z;
     }
 }

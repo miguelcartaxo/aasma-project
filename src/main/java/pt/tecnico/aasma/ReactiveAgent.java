@@ -185,23 +185,6 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
         }
     }
     
-    /**
-     * Initialize all necessary variables here, before the bot actually receives
-     * anything from the environment.
-     */
-//    @Override
-//    public void prepareBot(UT2004Bot bot) {
-//        
-//        weaponPrefs.addGeneralPref(MINIGUN, true);
-//        weaponPrefs.addGeneralPref(LINK_GUN, false);
-//        weaponPrefs.addGeneralPref(LIGHTNING_GUN, true);
-//        weaponPrefs.addGeneralPref(SHOCK_RIFLE, true);
-//        weaponPrefs.addGeneralPref(ROCKET_LAUNCHER, true);
-//        weaponPrefs.addGeneralPref(LINK_GUN, true);
-//        weaponPrefs.addGeneralPref(ASSAULT_RIFLE, true);
-//        weaponPrefs.addGeneralPref(FLAK_CANNON, true);
-//        weaponPrefs.addGeneralPref(BIO_RIFLE, true);
-//    }
     @Override
     public void prepareBot(UT2004Bot bot) {
         tabooItems = new TabooSet<Item>(bot);
@@ -247,10 +230,7 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
         System.out.println("teams: " + maxTeams);
         int team = random.nextInt(maxTeams);
         home = getTeamBase(team).getLocation();
-//        return new Initialize().setName("ReactiveAgent").setTeam(
-//                team);
          return new Initialize().setName("ReactiveAgent");
-        //ADICIONAR AQUI BOTS PARA CADA EQUIPA???
     }
     
    
@@ -274,12 +254,11 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
     @SuppressWarnings("empty-statement")
     public void logic() throws PogamutException {
         
-        // global anti-stuck?
+      
         if (!info.isMoving()) {
             ++notMoving;
             if (notMoving > 25) {
-                // we're stuck - reset the bot's mind
-                //randomStrafe();
+                
                 navigation.navigate(ctf.getEnemyBase());
                 body.getCommunication().sendGlobalTextMessage("IM STUCK IN LOGIC!");
                 return;
@@ -322,7 +301,7 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
 
     }
 
-//flag info
+
     public FlagInfo getEnemyFlag() {
         return enemyFlag;
     }
@@ -395,18 +374,16 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
         boolean shooting = false;
         double distance = Double.MAX_VALUE;
 
-        //body.getCommunication().sendTeamBubbleMessage(m.toString(), -1);
-
-        // 1) pick new enemy if the old one has been lost
+        
         if ( previousState != State.FIGHT || enemy == null || !enemy.isVisible()) {
-            // pick new enemy
+           
             enemy = players.getNearestVisiblePlayer(players.getVisibleEnemies()
                     .values());
             if (enemy == null) {
                 log.info("Can't see any enemies... ???");
                 return;
             }
-            if (info.isShooting()){ // stop shooting
+            if (info.isShooting()){
                 getAct().act(new StopShooting());
             }
             runningToPlayer = false;
@@ -416,7 +393,6 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
             
             distance = info.getLocation().getDistance(enemy.getLocation());
 
-            //  should shoot?
             if (shoot.shoot(weaponPrefs, enemy) != null) {
                 log.info("Shooting at enemy!!!");
                 shooting = true;
@@ -424,12 +400,10 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
             
         }
 
-        //  if enemy is far - run to him
         int decentDistance = Math.round(random.nextFloat() * 800) + 200;
         
         if (!enemy.isVisible() || !shooting || decentDistance < distance) {
             if (!runningToPlayer) {
-                //navigation.getPathExecutor().followPath(navigation.getPathPlanner().computePath(bot, enemy));
                 navigation.navigate(players.getNearestVisibleEnemy());
                 runningToPlayer = true;
             }
@@ -459,7 +433,6 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
                 getAct().act(new Move().setFirstLocation(item.getLocation()));
             } else {
                 navigation.navigate(item);
-                //pathExecutor.followPath(pathPlanner.computePath(bot, item));
                
             }
            

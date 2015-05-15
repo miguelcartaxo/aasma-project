@@ -80,29 +80,21 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     
     protected GameInfo gameInfo;
     
-     // Has info about CTF flags and bases been initiaized?
+    
     private boolean initialized = false;
-    /**
-     * Agent's Beliefs
-     */
+  
     protected ArrayList<Belief> beliefsList;
-    /**
-     * Agent's Desires 
-     */
+   
     protected SortedSet<Desire> desiresList;
-    /**
-     * Agent's Intention
-     */
+    
     protected Intention selectedIntention;
     
-    // Info about both flags
     protected FlagInfo ourFlag, enemyFlag;
-    // Location of both bases
+    
     protected NavPoint ourBase, enemyBase;
     
     private UT2004PathAutoFixer autoFixer;
     
-    // Last known health packet location
     private NavPoint lastHealthItem = null;
     
     private Player nemesis = null;
@@ -123,7 +115,6 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
 
 	    autoFixer = new UT2004PathAutoFixer(bot, navigation.getPathExecutor(), fwMap, aStar, navBuilder); // auto-removes wrong navigation links between navpoints
 
-		// listeners
 		navigation.getPathExecutor().getState().addListener(
 				new FlagListener<IPathExecutorState>() {
 					@Override
@@ -131,14 +122,15 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
 						switch (changedValue.getState()) {
 							case STUCK:
 								desiresList.remove(desiresList.last());
-                                                                filter(beliefsList, desiresList, selectedIntention);
+                                                                if(desiresList.size() > 0)
+                                                                    filter(beliefsList, desiresList);
                                                                 createAndExecutePlan(beliefsList, selectedIntention);
 								break;
 
 						}
 					}
 				});
-        // DEFINE WEAPON PREFERENCES
+        // WEAPON PREFERENCES
 		weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, false);
 		weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, true);
 		weaponPrefs.addGeneralPref(UT2004ItemType.LINK_GUN, false);
@@ -202,22 +194,23 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
         }
 
         if (!executingPlan) {
-            BDIAlgorithm();
+            BDI();
         }
     }
     
     /**
     * BDI ALGORITHM
     */
-    private void BDIAlgorithm() {
+    private void BDI() {
         
         beliefsList = beliefRevision();        
         rePlan();
     }
     
      private void rePlan() {
-        desiresList = options(beliefsList, selectedIntention);
-        selectedIntention = filter(beliefsList, desiresList, selectedIntention);
+        desiresList = options(beliefsList);
+        if(desiresList.size() > 0)
+            selectedIntention = filter(beliefsList, desiresList);
         createAndExecutePlan(beliefsList, selectedIntention);
     }
     
@@ -315,7 +308,7 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
      * Creates the list of the agent's desires according to the current beliefs and
      * his previous intention.
      */
-    private SortedSet<Desire> options(ArrayList<Belief> beliefs, Intention intention) {
+    private SortedSet<Desire> options(ArrayList<Belief> beliefs) {
         SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
         
         for (Belief b : beliefs) {
@@ -420,12 +413,9 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     }
     
     
-    private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires, Intention intention) {
-        if (desires.size() > 0) {
+    private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires) {
             Desire d = desires.last();
             return new Intention(d.getName(), d.getTarget());
-        }
-        return intention;
     }
     
     private void createAndExecutePlan(ArrayList<Belief> beliefs, Intention intention) {
