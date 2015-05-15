@@ -18,13 +18,9 @@ package pt.tecnico.aasma;
 
 import cz.cuni.amis.pogamut.base.agent.module.comm.PogamutJVMComm;
 import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutorState;
-import static cz.cuni.amis.pogamut.base.agent.navigation.PathExecutorState.STUCK;
-import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
 import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;
-import cz.cuni.amis.pogamut.ut2004.agent.navigation.stuckdetector.UT2004TimeStuckDetector;
-import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutor;
 import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.UT2004PathAutoFixer;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
@@ -40,31 +36,36 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Item;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Self;
-import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.TeamChat;
 import cz.cuni.amis.utils.exception.PogamutException;
 import cz.cuni.amis.utils.flag.FlagListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.logging.Level;
 import pt.tecnico.aasma.beliefs.BeingDamaged;
 import pt.tecnico.aasma.beliefs.Belief;
-import pt.tecnico.aasma.beliefs.Bored;
 import pt.tecnico.aasma.beliefs.CarryingFlag;
 import pt.tecnico.aasma.beliefs.FlagDropped;
 import pt.tecnico.aasma.beliefs.FlagInBase;
+import pt.tecnico.aasma.beliefs.LowAmmo;
+import pt.tecnico.aasma.beliefs.LowHealth;
+import pt.tecnico.aasma.beliefs.SeeingAmmoPack;
 import pt.tecnico.aasma.beliefs.SeeingEnemy;
+import pt.tecnico.aasma.beliefs.SeeingHealthPack;
 import pt.tecnico.aasma.beliefs.SeeingWeapon;
 import pt.tecnico.aasma.desires.CaptureEnemyFlag;
 import pt.tecnico.aasma.desires.CaptureOwnFlag;
+import pt.tecnico.aasma.desires.ChangeWeapon;
 import pt.tecnico.aasma.desires.Desire;
 import pt.tecnico.aasma.desires.GoToBase;
+import pt.tecnico.aasma.desires.GrabAmmo;
+import pt.tecnico.aasma.desires.GrabHealth;
 import pt.tecnico.aasma.desires.GrabWeapon;
 import pt.tecnico.aasma.desires.Intention;
 import pt.tecnico.aasma.desires.KillEnemy;
+
+
 
 
 /**
@@ -98,6 +99,9 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     protected NavPoint ourBase, enemyBase;
     
     private UT2004PathAutoFixer autoFixer;
+    
+    // Last known health packet location
+    private NavPoint lastHealthItem = null;
     
     protected TabooSet<Item> tabooItems = null;
     
@@ -161,6 +165,47 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     }
     
     /**
+     * This method is called only once right before actual logic() method is
+     * called for the first time.
+     */
+    @Override
+    public void beforeFirstLogic() {
+        currentBeliefs = new ArrayList<>();
+
+        currentDesires = new TreeSet<>(new Comparator<Desire>() {
+            
+            //Organizes the set in an ascending order
+            //Higher integer means higher priority
+            @Override
+            public int compare(Desire d1, Desire d2) {
+                return d1.getPriority() - d2.getPriority();
+            }
+        });
+        currentIntention = null;
+    }
+    
+    @Override
+    public void logic() throws PogamutException {
+        if (!initialized) {
+            log.info("Reinitializing info about flags...");
+            ourFlag = ctf.getOurFlag();
+            enemyFlag = ctf.getEnemyFlag();
+
+            ourBase = ctf.getOurBase();
+            enemyBase = ctf.getEnemyBase();
+            initialized = true;
+        }
+
+        if (!players.canSeeEnemies()) {
+            shoot.stopShooting();
+        }
+
+        if (!executingPlan) {
+            BDIAlgorithm();
+        }
+    }
+    
+    /**
     * BDI ALGORITHM
     */
     private void BDIAlgorithm() {
@@ -178,13 +223,13 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             Player p = (Player) getWorldView().get(senses.getLastDamage().getInstigator());
             newBeliefs.add(new BeingDamaged(p));
         }
-        if (ctf.isOurFlagHome()) {
+        if (ctf.isOurFlagHome()) 
             newBeliefs.add(new FlagInBase(ourBase, false));
-        }
         
-        if (ctf.isEnemyFlagHome()) {
+        
+        if (ctf.isEnemyFlagHome()) 
             newBeliefs.add(new FlagInBase(enemyBase, true));
-        }
+        
         
         if (ctf.isOurFlagHeld()) {
             UnrealId holderId = ctf.getOurFlag().getHolder();
@@ -196,9 +241,9 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             }
         }
         
-        if (ctf.isEnemyFlagHeld() && !ctf.isBotCarryingEnemyFlag()) {
+        if (ctf.isEnemyFlagHeld() && !ctf.isBotCarryingEnemyFlag()) 
             newBeliefs.add(new CarryingFlag(null, false));
-        }
+        
         
           if (ctf.isOurFlagDropped()) {
             log.info("Our flag is dropped!");
@@ -212,39 +257,50 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             newBeliefs.add(new FlagDropped(enemyFlag, true));
         }
 
-        if (ctf.isBotCarryingEnemyFlag()) {
+        if (ctf.isBotCarryingEnemyFlag()) 
             newBeliefs.add(new CarryingFlag());
-        }
+        
 
         
        
-        if (players.canSeeEnemies()) {
-            newBeliefs.add(new SeeingEnemy(players.getNearestVisibleEnemy()));
-        } else{
-            newBeliefs.add(new Bored());
-        }
+        if (players.canSeeEnemies()) 
+            newBeliefs.add(new SeeingEnemy(players.getNearestVisibleEnemy())); 
         
         Collection<NavPoint> visiblePoints = DistanceUtils.getDistanceSorted(this.navPoints.getVisibleNavPoints().values(), this.info.getLocation());
         NavPoint nearestHealth = null;
         NavPoint nearestAmmo = null;
         if (visiblePoints != null) {
             for (NavPoint navp : visiblePoints) {
-               // if (navp.isInvSpot() && navp.isItemSpawned()) {
-                 //   if (nearestHealth == null && navp.getItemClass().getCategory().equals(ItemType.Category.HEALTH)) {
-                   //     nearestHealth = navp;
-//                    } else if (nearestAmmo == null && navp.getItemClass().getCategory().equals(ItemType.Category.AMMO)) {
-//                        if (!weaponry.hasAmmo(navp.getItemClass())) {
-//                            nearestAmmo = navp;
-//                        }
-                   // } else 
-                        if (navp.getItemClass().getCategory().equals(ItemType.Category.WEAPON)) {
+                if (navp.isInvSpot() && navp.isItemSpawned()) {
+                    if (nearestHealth == null && navp.getItemClass().getCategory().equals(ItemType.Category.HEALTH)) {
+                        nearestHealth = navp;
+                    } else if (nearestAmmo == null && navp.getItemClass().getCategory().equals(ItemType.Category.AMMO)) {
+                        if (!weaponry.hasAmmo(navp.getItemClass())) {
+                            nearestAmmo = navp;
+                        }
+                    } else if (navp.getItemClass().getCategory().equals(ItemType.Category.WEAPON)) {
                         if (!weaponry.hasWeapon(navp.getItemClass())) {
                             newBeliefs.add(new SeeingWeapon(navp));
                            
                         }
                     }
                 }
-            }
+            }  
+        }   
+        
+        if(nearestHealth != null)
+            newBeliefs.add(new SeeingHealthPack(nearestHealth));
+        
+        if(nearestAmmo != null)
+            newBeliefs.add(new SeeingAmmoPack(nearestAmmo));
+        
+        if (info.getHealth() < 70) 
+            newBeliefs.add(new LowHealth());
+        
+
+        if (info.getCurrentAmmo() < weaponry.getMaxAmmo(weaponry.getCurrentWeapon().getDescriptor().getPriAmmoItemType()) * 0.3)
+            newBeliefs.add(new LowAmmo());
+        
         
         return newBeliefs;
     
@@ -269,9 +325,9 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                     newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 5));
                     break;
                     
-                case "Bored":
-                    newDesires.add(new GoToBase(enemyBase, true, 4));
-                    break;
+//                case "Bored":
+//                    newDesires.add(new GoToBase(enemyBase, true, 4));
+//                    break;
                 case "CarryingFlag":
                     newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
                     break;
@@ -327,6 +383,31 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                 
                 case "SeeingWeapon":
                     newDesires.add(new GrabWeapon(((SeeingWeapon) b).getPoint(), 3));
+                    break;
+                
+                case "SeeingAmmoPack":
+                    int priority = 0;
+                    if (beliefs.contains(new LowAmmo())) {
+                        priority = 11;
+                    } else {
+                        priority = 6;
+                    }
+                    NavPoint firstPacket = ((SeeingAmmoPack) b).getPoint();
+                    newDesires.add(new GrabAmmo(firstPacket, priority));
+                    break;
+                
+                case "LowHealth":
+
+                    if (beliefs.contains(new SeeingHealthPack(null))) {
+                        SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
+                        newDesires.add(new GrabHealth(bel.getPoint(), 12));
+                        lastHealthItem = bel.getPoint();
+                    } else if (lastHealthItem != null) {
+                        newDesires.add(new GrabHealth(lastHealthItem, 12));
+                    }
+                    break;
+                case "LowAmmoBelief":
+                    newDesires.add(new ChangeWeapon(11));
                     break;
                     
              }
@@ -395,52 +476,25 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
+            case "GrabHealth":
+                navigation.navigate((NavPoint) intention.getTarget());
+                break;
             
+            case "GrabAmmo":
+                navigation.navigate((NavPoint) intention.getTarget());
+                break;
+            
+            case "ChangeWeapon":
+                if (intention.getTarget() == null) {
+                    Object[] loadedWeapons = weaponry.getLoadedWeapons().keySet().toArray();
+                    weaponry.changeWeapon((ItemType) loadedWeapons[random.nextInt(loadedWeapons.length)]);
+                }
             
         }
     
         executingPlan = false;
     }
     
-    /**
-     * This method is called only once right before actual logic() method is
-     * called for the first time.
-     */
-    @Override
-    public void beforeFirstLogic() {
-        currentBeliefs = new ArrayList<>();
-
-        currentDesires = new TreeSet<>(new Comparator<Desire>() {
-            
-            //Organizes the set in an ascending order
-            //Higher integer means higher priority
-            @Override
-            public int compare(Desire d1, Desire d2) {
-                return d1.getPriority() - d2.getPriority();
-            }
-        });
-        currentIntention = null;
-    }
     
-    @Override
-    public void logic() throws PogamutException {
-        if (!initialized) {
-            log.info("Reinitializing info about flags...");
-            ourFlag = ctf.getOurFlag();
-            enemyFlag = ctf.getEnemyFlag();
-
-            ourBase = ctf.getOurBase();
-            enemyBase = ctf.getEnemyBase();
-            initialized = true;
-        }
-
-        if (!players.canSeeEnemies()) {
-            shoot.stopShooting();
-        }
-
-        if (!executingPlan) {
-            BDIAlgorithm();
-        }
-    }
     
 }
