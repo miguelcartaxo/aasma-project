@@ -422,10 +422,10 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                     if (((BeingDamaged) b).byEnemy()) {
                         newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 19));
                     }
-                    Message m = new Message("HELP", info);
-                    log.log(Level.INFO, "BEIING HIT!");
-                    body.getCommunication().sendTeamBubbleMessage(m.toString(), -1);
-                     body.getCommunication().sendGlobalBubbleMessage("I\'M HIT\'!", -1);
+//                    Message m = new Message("HELP", info);
+//                    log.log(Level.INFO, "BEIING HIT!");
+//                    body.getCommunication().sendTeamBubbleMessage(m.toString(), -1);
+//                     body.getCommunication().sendGlobalBubbleMessage("I\'M HIT\'!", -1);
                     break;
                 
                 case "SeeingEnemy":
@@ -609,37 +609,37 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
     
     // body.getCommunication().sendTeamBubbleMessage(me.toString(), -1);
     // MessageEvent msg = Utils.buildCorrectMessageType(info);
-      @EventListener(eventClass = TeamChat.class)
-    protected void receiveMessage(TeamChat event) {
-        log.log(Level.INFO, "MESSAGE RECEIVED: {0}", event.getText());
-//        
-        String strprs = event.getText();
- 
-        String[] toSplit = strprs.split(":");
-        String msgToSplit = toSplit[0];
-        String[] msgSplitted = msgToSplit.split(";");
-        String msg = msgSplitted[0];
-        String botName = msgSplitted[1];
-        String locToSplit = toSplit[1];
-        String[] locationOfSender = locToSplit.split(":");
-        String localx = locationOfSender[0];
-        String localy = locationOfSender[1];
-        String localz = locationOfSender[2];
-//        
-       Location locOfSender = new Location(Double.parseDouble(localx), Double.parseDouble(localy), Double.parseDouble(localz));
-//        
-//
-        log.log(Level.INFO, "BotInMessage - {0}", botName);
-        log.log(Level.INFO, "BotInMessage - {0}", info.getBotName());
-        if (!botName.equals(info.getBotName().toString())) {
-            log.log(Level.INFO, "Handled Message - timestamp: {0}", new Date(System.currentTimeMillis()));
-            log.log(Level.INFO, "Message: {0}", event.getText());
-            
-            if (msg.equals("HELP")) {
-                log.info("Let's go help m8!");
-                desiresList.add(new GoToAssistFriend(locOfSender, 19));
-            }
-        }
-    
-    }    
+//      @EventListener(eventClass = TeamChat.class)
+//    protected void receiveMessage(TeamChat event) {
+//        log.log(Level.INFO, "MESSAGE RECEIVED: {0}", event.getText());
+//        log.info("BLABLALBLADLBLBLASDJASDDHFKHAD");
+//        String strprs = event.getText();
+// 
+//        String[] toSplit = strprs.split(":");
+//        String msgToSplit = toSplit[0];
+//        String[] msgSplitted = msgToSplit.split(";");
+//        String msg = msgSplitted[0];
+//        String botName = msgSplitted[1];
+//        String locToSplit = toSplit[1];
+//        String[] locationOfSender = locToSplit.split(",");
+//        String localx = locationOfSender[0];
+//        String localy = locationOfSender[1];
+//        String localz = locationOfSender[2];
+////        
+//       Location locOfSender = new Location(Double.parseDouble(localx), Double.parseDouble(localy), Double.parseDouble(localz));
+////        
+////
+//        log.log(Level.INFO, "BotInMessage - {0}", botName);
+//        log.log(Level.INFO, "BotInMessage - {0}", info.getBotName());
+//        if (!botName.equals(info.getBotName().toString())) {
+//            log.log(Level.INFO, "Handled Message - timestamp: {0}", new Date(System.currentTimeMillis()));
+//            log.log(Level.INFO, "Message: {0}", event.getText());
+//            
+//            if (msg.equals("HELP")) {
+//                log.info("Let's go help m8!");
+//                desiresList.add(new GoToAssistFriend(locOfSender, 19));
+//            }
+//        }
+//    
+//    }    
 }

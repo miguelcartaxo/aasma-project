@@ -208,10 +208,10 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     private void BDIAlgorithm() {
         
         beliefsList = beliefRevision();        
-         recomputeItention();
+        rePlan();
     }
     
-     private void recomputeItention() {
+     private void rePlan() {
         desiresList = options(beliefsList, selectedIntention);
         selectedIntention = filter(beliefsList, desiresList, selectedIntention);
         createAndExecutePlan(beliefsList, selectedIntention);
@@ -503,23 +503,23 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
             if (ctf.isEnemyFlagHome()) {
                 navigation.stopNavigation();
                 beliefsList.add(new FlagInBase(enemyBase, true));
-                recomputeItention();
+                rePlan();
             } else if (ctf.isEnemyFlagDropped()) {
                 navigation.stopNavigation();
                 beliefsList.add(new FlagDropped(event.getObject(), true));
-                recomputeItention();
+                rePlan();
             }
         }
         if (event.getObject().getTeam() == info.getTeam()) {
             if (ctf.isOurFlagDropped()) {
                 navigation.stopNavigation();
                 beliefsList.add(new FlagDropped(event.getObject(), false));
-                recomputeItention();
+                rePlan();
             } else if (ctf.isEnemyTeamCarryingOurFlag()) {
                 Player enemy = players.getPlayer(event.getObject().getHolder());
                 beliefsList.add(new SeeingEnemy(enemy));
                 beliefsList.add(new CarryingFlag(enemy, true));
-                recomputeItention();
+                rePlan();
             }
         }
     }
@@ -531,7 +531,7 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
         if (event.getObject().getDescriptor().getItemCategory().equals(ItemType.Category.HEALTH)) {
             log.info("Found health!!");
             beliefsList.add(new SeeingHealthPack(point));
-            recomputeItention();
+            rePlan();
         }
     }
 }

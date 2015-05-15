@@ -17,7 +17,7 @@ public class AgentMain {
     }
     public static void main(String args[]) throws PogamutException {
         
-        AgentType type = AgentType. REACTIVE;
+        AgentType type = AgentType. BRAVE_DELIBERATIVE;
         
         if(type == AgentType.REACTIVE){
                 new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
@@ -39,10 +39,9 @@ public class AgentMain {
                         BraveDeliberativeAgent.class, // which UT2004BotController it should instantiate
                         "BraveDeliberativeAgent" // what name the runner should be using
                         ).setMain(true) // tells runner that is is executed inside MAIN method, thus it may block the thread and watch whether agent/s are correctly executed
-                        .startAgents(new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE),
-                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_BLUE)
+                        .startAgents(new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED),
+                                new UT2004BotParameters().setAgentId(new AgentId("CTF-BOT")).setTeam(AgentInfo.TEAM_RED)
+                               
                                 );
               
         } else if (type == AgentType.COWARD_DELIBERATIVE){
