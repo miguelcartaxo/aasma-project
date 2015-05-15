@@ -16,6 +16,7 @@
  */
 package pt.tecnico.aasma;
 
+import cz.cuni.amis.pogamut.base.agent.module.comm.PogamutJVMComm;
 import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutorState;
 import static cz.cuni.amis.pogamut.base.agent.navigation.PathExecutorState.STUCK;
 import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
@@ -73,6 +74,8 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     
     private boolean executingPlan = false;
     
+    protected GameInfo gameInfo;
+    
      // Has info about CTF flags and bases been initiaized?
     private boolean initialized = false;
     /**
@@ -96,6 +99,16 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     private UT2004PathAutoFixer autoFixer;
     
     protected TabooSet<Item> tabooItems = null;
+    
+    @Override
+	public void botFirstSpawn(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init, Self self) {
+		PogamutJVMComm.getInstance().registerAgent(bot, self.getTeam());
+	}
+	
+	@Override
+	public void botShutdown() {
+		PogamutJVMComm.getInstance().unregisterAgent(bot);
+	}
     
     
     @Override
@@ -147,7 +160,7 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     @Override
     public void botInitialized(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init) {
 
-       
+       this.gameInfo = gameInfo;
 //        navigation.getPathExecutor().addStuckDetector(new UT2004TimeStuckDetector(bot, 3.0, 10.0));       // if the bot does not move for 3 seconds, considered that it is stuck
 //
 //        navigation.getPathExecutor().getState().addStrongListener(new FlagListener<IPathExecutorState>() {
@@ -184,7 +197,7 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     }
     
     private ArrayList<Belief> beliefRevision() {
-        ArrayList<Belief> newBeliefs = new ArrayList();
+        ArrayList<Belief> newBeliefs = new ArrayList<>();
         
 //        if (senses.isBeingDamaged() && !senses.getLastDamage().isCausedByWorld()) {
 //            Player p = (Player) getWorldView().get(senses.getLastDamage().getInstigator());
@@ -230,9 +243,9 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
 
         
        
-        if (players.canSeeEnemies()) {
+        //if (players.canSeeEnemies()) {
             newBeliefs.add(new SeeingEnemy(players.getNearestVisibleEnemy()));
-        }
+        //}
 //        
 //        Collection<NavPoint> visiblePoints = DistanceUtils.getDistanceSorted(this.navPoints.getVisibleNavPoints().values(), this.info.getLocation());
 //        NavPoint nearestHealth = null;
@@ -275,8 +288,9 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
 //                    }
 //                    break;
                 
-                case "SeeingEnemyBelief":
+                case "SeeingEnemy":
                     newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 5));
+                    System.out.println("KillEnemy Desire");
                     break;
 //                case "CarryingFlagBelief":
 //                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));

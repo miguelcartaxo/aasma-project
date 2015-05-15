@@ -27,6 +27,7 @@ public class SeeingEnemy extends Belief{
 
     public SeeingEnemy(Player enemy) {
         super.name = this.getClass().getSimpleName();
+        System.out.println(name);
         this.enemy = enemy;
     }
 
