@@ -24,7 +24,6 @@ import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.base3d.worldview.object.event.WorldObjectAppearedEvent;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;
-import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.UT2004PathAutoFixer;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotModuleController;
@@ -84,15 +83,15 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     /**
      * Agent's Beliefs
      */
-    protected ArrayList<Belief> currentBeliefs;
+    protected ArrayList<Belief> beliefsList;
     /**
      * Agent's Desires 
      */
-    protected SortedSet<Desire> currentDesires;
+    protected SortedSet<Desire> desiresList;
     /**
      * Agent's Intention
      */
-    protected Intention currentIntention;
+    protected Intention selectedIntention;
     
     // Info about both flags
     protected FlagInfo ourFlag, enemyFlag;
@@ -103,8 +102,6 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     
     // Last known health packet location
     private NavPoint lastHealthItem = null;
-    
-    protected TabooSet<Item> tabooItems = null;
     
     @Override
 	public void botFirstSpawn(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init, Self self) {
@@ -119,7 +116,6 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     
     @Override
     public void prepareBot(UT2004Bot bot) {
-        tabooItems = new TabooSet<Item>(bot);
 
 	    autoFixer = new UT2004PathAutoFixer(bot, navigation.getPathExecutor(), fwMap, aStar, navBuilder); // auto-removes wrong navigation links between navpoints
 
@@ -130,9 +126,9 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
 					public void flagChanged(IPathExecutorState changedValue) {
 						switch (changedValue.getState()) {
 							case STUCK:
-								currentDesires.remove(currentDesires.last());
-                                                                filter(currentBeliefs, currentDesires, currentIntention);
-                                                                createAndExecutePlan(currentBeliefs, currentIntention);
+								desiresList.remove(desiresList.last());
+                                                                filter(beliefsList, desiresList, selectedIntention);
+                                                                createAndExecutePlan(beliefsList, selectedIntention);
 								break;
 
 						}
@@ -157,7 +153,7 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
      */
     @Override
     public Initialize getInitializeCommand() {
-        return new Initialize().setName("DeliberativeAgent");
+        return new Initialize().setName("HybridAgent");
     }
     
     @Override
@@ -171,9 +167,9 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
      */
     @Override
     public void beforeFirstLogic() {
-        currentBeliefs = new ArrayList<>();
+        beliefsList = new ArrayList<>();
 
-        currentDesires = new TreeSet<>(new Comparator<Desire>() {
+        desiresList = new TreeSet<>(new Comparator<Desire>() {
             
             //Organizes the set in an ascending order
             //Higher integer means higher priority
@@ -182,7 +178,7 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
                 return d1.getPriority() - d2.getPriority();
             }
         });
-        currentIntention = null;
+        selectedIntention = null;
     }
     
     @Override
@@ -211,14 +207,14 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     */
     private void BDIAlgorithm() {
         
-        currentBeliefs = beliefRevision();        
+        beliefsList = beliefRevision();        
          recomputeItention();
     }
     
      private void recomputeItention() {
-        currentDesires = options(currentBeliefs, currentIntention);
-        currentIntention = filter(currentBeliefs, currentDesires, currentIntention);
-        createAndExecutePlan(currentBeliefs, currentIntention);
+        desiresList = options(beliefsList, selectedIntention);
+        selectedIntention = filter(beliefsList, desiresList, selectedIntention);
+        createAndExecutePlan(beliefsList, selectedIntention);
     }
     
     private ArrayList<Belief> beliefRevision() {
@@ -316,7 +312,7 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
      * his previous intention.
      */
     private SortedSet<Desire> options(ArrayList<Belief> beliefs, Intention intention) {
-        SortedSet<Desire> newDesires = new TreeSet(currentDesires.comparator());
+        SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
         
         for (Belief b : beliefs) {
             switch (b.getName()) {
@@ -454,7 +450,7 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
                 }
                 break;
             
-            case "CaptureOurFlag":
+            case "CaptureOwnFlag":
                 Location loc = ((FlagInfo) intention.getTarget()).getLocation();
                 if (loc != null) {
                     log.info("Plan: Capturing our flag");
@@ -473,18 +469,18 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
         
-            case "GrabWeapon":
-                log.info("Plan: Grabing Weapon");
+            case "GetWeapon":
+                log.info("Plan: Getting Weapon");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
-            case "GrabHealth":
-                log.info("Plan: Grabing Health");
+            case "GetHealth":
+                log.info("Plan: Getting Health");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
-            case "GrabAmmo":
-                log.info("Plan: Grabing Ammo");
+            case "GetAmmo":
+                log.info("Plan: Getting Ammo");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
@@ -499,67 +495,43 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     
         executingPlan = false;
     }
-    
-    
-    @EventListener(eventClass = PlayerKilled.class)
-    protected void playerKilled(PlayerKilled event) {
-        Player enemy = players.getPlayer(event.getId());
-        SeeingEnemy b1 = new SeeingEnemy(enemy);
-        if (currentBeliefs.contains(b1)) {
-            currentBeliefs.remove(b1);
-        }
-
-        CarryingFlag b2 = new CarryingFlag(enemy, true);
-        if (currentBeliefs.contains(b2)) {
-            currentBeliefs.remove(b2);
-        }
-
-        BeingDamaged b3 = new BeingDamaged(enemy);
-        if (currentBeliefs.contains(b3)) {
-            currentBeliefs.remove(b3);
-        }
-
-        // If the current intention is killing this player, then immediatelly recompute the plan
-        if (currentIntention.getName().equals("KillEnemy")
-                && ((Player) currentIntention.getTarget()).getId().equals(event.getId())) {
-            recomputeItention();
-        }
-    }
 
     @ObjectClassEventListener(eventClass = WorldObjectAppearedEvent.class, objectClass = FlagInfo.class)
-    protected void flagEncountered(WorldObjectAppearedEvent<FlagInfo> event) {
+    protected void foundFlag(WorldObjectAppearedEvent<FlagInfo> event) {
 
         if (event.getObject().getTeam() != info.getTeam()) {
             if (ctf.isEnemyFlagHome()) {
                 navigation.stopNavigation();
-                currentBeliefs.add(new FlagInBase(enemyBase, true));
+                beliefsList.add(new FlagInBase(enemyBase, true));
                 recomputeItention();
             } else if (ctf.isEnemyFlagDropped()) {
                 navigation.stopNavigation();
-                currentBeliefs.add(new FlagDropped(event.getObject(), true));
+                beliefsList.add(new FlagDropped(event.getObject(), true));
                 recomputeItention();
             }
         }
         if (event.getObject().getTeam() == info.getTeam()) {
             if (ctf.isOurFlagDropped()) {
                 navigation.stopNavigation();
-                currentBeliefs.add(new FlagDropped(event.getObject(), false));
+                beliefsList.add(new FlagDropped(event.getObject(), false));
                 recomputeItention();
             } else if (ctf.isEnemyTeamCarryingOurFlag()) {
                 Player enemy = players.getPlayer(event.getObject().getHolder());
-                currentBeliefs.add(new SeeingEnemy(enemy));
-                currentBeliefs.add(new CarryingFlag(enemy, true));
+                beliefsList.add(new SeeingEnemy(enemy));
+                beliefsList.add(new CarryingFlag(enemy, true));
                 recomputeItention();
             }
         }
     }
 
     @ObjectClassEventListener(eventClass = WorldObjectAppearedEvent.class, objectClass = Item.class)
-    protected void ItemEncountered(WorldObjectAppearedEvent<Item> event) {
+    protected void foundItem(WorldObjectAppearedEvent<Item> event) {
         NavPoint point = event.getObject().getNavPoint();
 
         if (event.getObject().getDescriptor().getItemCategory().equals(ItemType.Category.HEALTH)) {
             log.info("Found health!!");
+            beliefsList.add(new SeeingHealthPack(point));
+            recomputeItention();
         }
     }
 }

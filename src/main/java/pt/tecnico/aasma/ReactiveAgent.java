@@ -280,7 +280,7 @@ public class ReactiveAgent extends UT2004BotModuleController<UT2004Bot>{
             if (notMoving > 25) {
                 // we're stuck - reset the bot's mind
                 //randomStrafe();
-                navigation.navigate(ctf.getOurBase());
+                navigation.navigate(ctf.getEnemyBase());
                 body.getCommunication().sendGlobalTextMessage("IM STUCK IN LOGIC!");
                 return;
             }

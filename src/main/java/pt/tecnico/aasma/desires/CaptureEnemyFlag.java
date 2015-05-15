@@ -26,13 +26,13 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInf
 public class CaptureEnemyFlag extends Desire{
     
     public CaptureEnemyFlag(IWorldObject target, int priority) {
-        super.name = "CaptureEnemyFlag";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }
 
     public CaptureEnemyFlag(FlagInfo target, int priority) {
-        super.name = "CaptureEnemyFlag";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }

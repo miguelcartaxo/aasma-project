@@ -26,13 +26,13 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoin
 public class GetWeapon extends Desire{
     
      public GetWeapon(IWorldObject target, int priority) {
-        super.name = "GrabWeapon";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }
 
     public GetWeapon(NavPoint target, int priority) {
-        super.name = "GrabWeapon";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }

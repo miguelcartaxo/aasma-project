@@ -26,13 +26,13 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInf
 public class CaptureOwnFlag extends Desire{
     
     public CaptureOwnFlag(IWorldObject target, int priority) {
-        super.name = "CaptureOurFlag";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }
 
     public CaptureOwnFlag(FlagInfo target, int priority) {
-        super.name = "CaptureOurFlag";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }

@@ -26,13 +26,13 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoin
 public class GetHealth extends Desire{
     
     public GetHealth(IWorldObject target, int priority) {
-        super.name = "GrabHealth";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }
 
     public GetHealth(NavPoint target, int priority) {
-        super.name = "GrabHealth";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }

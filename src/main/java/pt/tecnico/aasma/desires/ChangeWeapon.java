@@ -22,7 +22,7 @@ package pt.tecnico.aasma.desires;
  */
 public class ChangeWeapon extends Desire{
      public ChangeWeapon(int priority) {
-        super.name = "ChangeWeapon";
+        super.name = this.getClass().getSimpleName();
         super.target = null;
         super.priority = priority;
     }

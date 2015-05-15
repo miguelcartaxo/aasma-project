@@ -26,13 +26,13 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
 public class KillEnemy extends Desire {
     
     public KillEnemy(IWorldObject target, int priority) {
-        super.name = "KillEnemy";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }
 
     public KillEnemy(Player target, int priority) {
-        super.name = "KillEnemy";
+        super.name = this.getClass().getSimpleName();
         super.target = target;
         super.priority = priority;
     }
