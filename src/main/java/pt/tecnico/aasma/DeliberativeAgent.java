@@ -201,43 +201,43 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             Player p = (Player) getWorldView().get(senses.getLastDamage().getInstigator());
             newBeliefs.add(new BeingDamaged(p));
         }
-//        if (ctf.isOurFlagHome()) {
-//            newBeliefs.add(new FlagInBase(ourBase, false));
-//        }
+        if (ctf.isOurFlagHome()) {
+            newBeliefs.add(new FlagInBase(ourBase, false));
+        }
         
-//        if (ctf.isEnemyFlagHome()) {
-//            newBeliefs.add(new FlagInBase(enemyBase, true));
-//        }
-//        
-//        if (ctf.isOurFlagHeld()) {
-//            UnrealId holderId = ctf.getOurFlag().getHolder();
-//            if (holderId != null) {
-//                Player pl = (Player) getWorldView().get(holderId);
-//                newBeliefs.add(new CarryingFlag(pl, true));
-//            } else {
-//                newBeliefs.add(new CarryingFlag(null, true));
-//            }
-//        }
-//        
-//        if (ctf.isEnemyFlagHeld() && !ctf.isBotCarryingEnemyFlag()) {
-//            newBeliefs.add(new CarryingFlag(null, false));
-//        }
-//        
-//          if (ctf.isOurFlagDropped()) {
-//            log.info("Our flag is dropped!");
-//            ourFlag = ctf.getOurFlag();
-//            newBeliefs.add(new FlagDropped(ourFlag, false));
-//        }
-//
-//        if (ctf.isEnemyFlagDropped()) {
-//            log.info("Enemy's flag is dropped!");
-//            enemyFlag = ctf.getEnemyFlag();
-//            newBeliefs.add(new FlagDropped(enemyFlag, true));
-//        }
-//
-//        if (ctf.isBotCarryingEnemyFlag()) {
-//            newBeliefs.add(new CarryingFlag());
-//        }
+        if (ctf.isEnemyFlagHome()) {
+            newBeliefs.add(new FlagInBase(enemyBase, true));
+        }
+        
+        if (ctf.isOurFlagHeld()) {
+            UnrealId holderId = ctf.getOurFlag().getHolder();
+            if (holderId != null) {
+                Player pl = (Player) getWorldView().get(holderId);
+                newBeliefs.add(new CarryingFlag(pl, true));
+            } else {
+                newBeliefs.add(new CarryingFlag(null, true));
+            }
+        }
+        
+        if (ctf.isEnemyFlagHeld() && !ctf.isBotCarryingEnemyFlag()) {
+            newBeliefs.add(new CarryingFlag(null, false));
+        }
+        
+          if (ctf.isOurFlagDropped()) {
+            log.info("Our flag is dropped!");
+            ourFlag = ctf.getOurFlag();
+            newBeliefs.add(new FlagDropped(ourFlag, false));
+        }
+
+        if (ctf.isEnemyFlagDropped()) {
+            log.info("Enemy's flag is dropped!");
+            enemyFlag = ctf.getEnemyFlag();
+            newBeliefs.add(new FlagDropped(enemyFlag, true));
+        }
+
+        if (ctf.isBotCarryingEnemyFlag()) {
+            newBeliefs.add(new CarryingFlag());
+        }
 
         
        
@@ -295,61 +295,61 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                 case "Bored":
                     newDesires.add(new GoToBase(enemyBase, true, 4));
                     break;
-//                case "CarryingFlag":
-//                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
-//                    break;
-//                
-//                case "EnemyCarryingFlag":
-//                    if (((CarryingFlag) b).getCarrier() == null) {
-//                        newDesires.add(new GoToBase(enemyBase, true, 5));
-//                    } else {
-//                        log.info("I see him with my flag!!");
-//                        newDesires.add(new GoToBase(ourBase, true, 1));
-//                        //newDesires.add(new KillEnemyDesire(((CarryingFlagBelief) b).getCarrier(), 9));
-//                    }
-//                    break;
-//                
-//                case "FriendCarryingFlag":
-//                    newDesires.add(new GoToBase(ourBase, true, 6));
-//                    break;
-//                
-//                case "OurFlagDropped":
-//                    if (((FlagDropped) b).getFlag().getLocation() == null) {
-//                        if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
-//                            newDesires.add(new GoToBase(enemyBase, true, 4));
-//                        } else {
-//                            newDesires.add(new GoToBase(ourBase, false, 4));
-//                        }
-//                    } else {
-//                        
-//                        newDesires.add(new CaptureOwnFlag(((FlagDropped) b).getFlag(), 8));
-//                    }
-//                    break;
-//                    
-//                case "EnemyFlagDropped":
-//                    if (((FlagDropped) b).getFlag().getLocation() == null) {
-//                        if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
-//                            newDesires.add(new GoToBase(enemyBase, false, 1));
-//                        } else {
-//                            newDesires.add(new GoToBase(ourBase, true, 1));
-//                        }
-//                    } else {
-//                        log.info("Belief: Enemy flag dropped and I see it!!");
-//                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 7));
-//                    }
-//                    break;
-//                case "EnemyFlagInBase":
-//                    if (!beliefs.contains(new CarryingFlag())) {
-//                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 2));
-//                    }
-//                    break;
+                case "CarryingFlag":
+                    newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
+                    break;
+                
+                case "EnemyCarryingFlag":
+                    if (((CarryingFlag) b).getCarrier() == null) {
+                        newDesires.add(new GoToBase(enemyBase, true, 5));
+                    } else {
+                        log.info("I see him with my flag!!");
+                        newDesires.add(new GoToBase(ourBase, true, 1));
+                        //newDesires.add(new KillEnemyDesire(((CarryingFlagBelief) b).getCarrier(), 9));
+                    }
+                    break;
+                
+                case "FriendCarryingFlag":
+                    newDesires.add(new GoToBase(ourBase, true, 6));
+                    break;
+                
+                case "OurFlagDropped":
+                    if (((FlagDropped) b).getFlag().getLocation() == null) {
+                        if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
+                            newDesires.add(new GoToBase(enemyBase, true, 4));
+                        } else {
+                            newDesires.add(new GoToBase(ourBase, false, 4));
+                        }
+                    } else {
+                        
+                        newDesires.add(new CaptureOwnFlag(((FlagDropped) b).getFlag(), 8));
+                    }
+                    break;
                     
-//                case "FlagInBase":
-//                    newDesires.add(new GoToBase(ourBase, true, 10));
-//                    break;
+                case "EnemyFlagDropped":
+                    if (((FlagDropped) b).getFlag().getLocation() == null) {
+                        if (info.getLocation().getDistance(enemyBase.getLocation()) >= info.getLocation().getDistance(ourBase.getLocation())) {
+                            newDesires.add(new GoToBase(enemyBase, false, 1));
+                        } else {
+                            newDesires.add(new GoToBase(ourBase, true, 1));
+                        }
+                    } else {
+                        log.info("Belief: Enemy flag dropped and I see it!!");
+                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 7));
+                    }
+                    break;
+                case "EnemyFlagInBase":
+                    if (!beliefs.contains(new CarryingFlag())) {
+                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 2));
+                    }
+                    break;
+                    
+                case "FlagInBase":
+                    newDesires.add(new GoToBase(ourBase, true, 10));
+                    break;
                 
                 case "SeeingWeapon":
-                    newDesires.add(new GrabWeapon(((SeeingWeapon) b).getPoint(), 50));
+                    newDesires.add(new GrabWeapon(((SeeingWeapon) b).getPoint(), 3));
                     break;
                     
              }
@@ -382,41 +382,37 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
                 }
                 break;
                 
+            case "CaptureEnemyFlag":
+                if (beliefs.contains(new CarryingFlag())) {
+                    log.info("Executing plan: I have the flag and I'm returning to base!");
+                    navigation.navigate(ourBase);
+                } else if (beliefs.contains(new FlagInBase(enemyBase, true))) {
+                    log.info("Executing plan: Flag at the base, going to get it");
+                    navigation.navigate(enemyBase);
+                } else if (beliefs.contains(new FlagDropped(enemyFlag, true))) {
+                    log.info("Executing plan: Enemy flag dropped, going to get it");
+                    navigation.navigate(((FlagInfo) intention.getTarget()).getLocation());
+                }
+                break;
+            
+            case "CaptureOurFlag":
+                Location loc = ((FlagInfo) intention.getTarget()).getLocation();
+                if (loc != null) {
+                    log.info("Executing plan: Capturing our flag");
+                    navigation.navigate(loc);
+                }
+                break;
             case "GoToEnemyBase":
-                //body.getLocomotion().strafeLeft(300.0);
+                log.info("Executing plan: Going to enemy base");
+                NavPoint target = (NavPoint) intention.getTarget();
+              
+                navigation.navigate(target);
+                break;
+            case "GoToOurBase":
+                
+                log.info("Executing plan: Going to my base");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
-//            case "CaptureEnemyFlag":
-//                if (beliefs.contains(new CarryingFlag())) {
-//                    log.info("Executing plan: I have the flag and I'm returning to base!");
-//                    navigation.navigate(ourBase);
-//                } else if (beliefs.contains(new FlagInBase(enemyBase, true))) {
-//                    log.info("Executing plan: Flag at the base, going to get it");
-//                    navigation.navigate(enemyBase);
-//                } else if (beliefs.contains(new FlagDropped(enemyFlag, true))) {
-//                    log.info("Executing plan: Enemy flag dropped, going to get it");
-//                    navigation.navigate(((FlagInfo) intention.getTarget()).getLocation());
-//                }
-//                break;
-//            
-//            case "CaptureOurFlag":
-//                Location loc = ((FlagInfo) intention.getTarget()).getLocation();
-//                if (loc != null) {
-//                    log.info("Executing plan: Capturing our flag");
-//                    navigation.navigate(loc);
-//                }
-//                break;
-//            case "GoToEnemyBase":
-//                log.info("Executing plan: Going to enemy base");
-//                NavPoint target = (NavPoint) intention.getTarget();
-//              
-//                navigation.navigate(target);
-//                break;
-//            case "GoToOurBase":
-//                
-//                log.info("Executing plan: Going to my base");
-//                navigation.navigate((NavPoint) intention.getTarget());
-//                break;
         
             case "GrabWeapon": 
                 navigation.navigate((NavPoint) intention.getTarget());
