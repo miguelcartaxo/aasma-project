@@ -14,26 +14,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package pt.tecnico.aasma.desires;
-
-import cz.cuni.amis.pogamut.base.communication.worldview.object.IWorldObject;
-import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
+package pt.tecnico.aasma.beliefs;
 
 /**
  *
  * @author Miguel
  */
-public class GrabHealth extends Desire{
+public class LowOnAmmo extends Belief{
     
-    public GrabHealth(IWorldObject target, int priority) {
-        super.name = "GrabHealth";
-        super.target = target;
-        super.priority = priority;
+     public LowOnAmmo() {
+        super.name = this.getClass().getSimpleName();
     }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass() || !obj.getClass().isInstance(this)) {
+            return false;
+        }
+        final LowOnAmmo other = (LowOnAmmo) obj;
+        if (!this.name.equals(other.getName()))
+            return false;
 
-    public GrabHealth(NavPoint target, int priority) {
-        super.name = "GrabHealth";
-        super.target = target;
-        super.priority = priority;
+        return true;
     }
 }

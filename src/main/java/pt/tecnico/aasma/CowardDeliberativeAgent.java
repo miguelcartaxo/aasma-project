@@ -21,7 +21,6 @@ import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutorState;
 import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;
-import cz.cuni.amis.pogamut.ut2004.agent.module.utils.TabooSet;
 import cz.cuni.amis.pogamut.ut2004.agent.navigation.UT2004PathAutoFixer;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004Bot;
 import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotModuleController;
@@ -48,8 +47,8 @@ import pt.tecnico.aasma.beliefs.Belief;
 import pt.tecnico.aasma.beliefs.CarryingFlag;
 import pt.tecnico.aasma.beliefs.FlagDropped;
 import pt.tecnico.aasma.beliefs.FlagInBase;
-import pt.tecnico.aasma.beliefs.LowAmmo;
-import pt.tecnico.aasma.beliefs.LowHealth;
+import pt.tecnico.aasma.beliefs.LowOnAmmo;
+import pt.tecnico.aasma.beliefs.LowOnHealth;
 import pt.tecnico.aasma.beliefs.SeeingAmmoPack;
 import pt.tecnico.aasma.beliefs.SeeingEnemy;
 import pt.tecnico.aasma.beliefs.SeeingHealthPack;
@@ -59,9 +58,9 @@ import pt.tecnico.aasma.desires.CaptureOwnFlag;
 import pt.tecnico.aasma.desires.ChangeWeapon;
 import pt.tecnico.aasma.desires.Desire;
 import pt.tecnico.aasma.desires.GoToBase;
-import pt.tecnico.aasma.desires.GrabAmmo;
-import pt.tecnico.aasma.desires.GrabHealth;
-import pt.tecnico.aasma.desires.GrabWeapon;
+import pt.tecnico.aasma.desires.GetAmmo;
+import pt.tecnico.aasma.desires.GetHealth;
+import pt.tecnico.aasma.desires.GetWeapon;
 import pt.tecnico.aasma.desires.Intention;
 import pt.tecnico.aasma.desires.KillEnemy;
 
@@ -96,14 +95,12 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     // Info about both flags
     protected FlagInfo ourFlag, enemyFlag;
     // Location of both bases
-    protected NavPoint ourBase, enemyBase;
+    protected NavPoint ourHome, enemyHome;
     
     private UT2004PathAutoFixer autoFixer;
     
     // Last known health packet location
     private NavPoint lastHealthItem = null;
-    
-    protected TabooSet<Item> tabooItems = null;
     
     @Override
 	public void botFirstSpawn(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init, Self self) {
@@ -118,7 +115,6 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     
     @Override
     public void prepareBot(UT2004Bot bot) {
-        tabooItems = new TabooSet<Item>(bot);
 
 	    autoFixer = new UT2004PathAutoFixer(bot, navigation.getPathExecutor(), fwMap, aStar, navBuilder); // auto-removes wrong navigation links between navpoints
 
@@ -191,8 +187,8 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
             ourFlag = ctf.getOurFlag();
             enemyFlag = ctf.getEnemyFlag();
 
-            ourBase = ctf.getOurBase();
-            enemyBase = ctf.getEnemyBase();
+            ourHome = ctf.getOurBase();
+            enemyHome = ctf.getEnemyBase();
             initialized = true;
         }
 
@@ -224,11 +220,11 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
             newBeliefs.add(new BeingDamaged(p));
         }
         if (ctf.isOurFlagHome()) 
-            newBeliefs.add(new FlagInBase(ourBase, false));
+            newBeliefs.add(new FlagInBase(ourHome, false));
         
         
         if (ctf.isEnemyFlagHome()) 
-            newBeliefs.add(new FlagInBase(enemyBase, true));
+            newBeliefs.add(new FlagInBase(enemyHome, true));
         
         
         if (ctf.isOurFlagHeld()) {
@@ -295,11 +291,11 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
             newBeliefs.add(new SeeingAmmoPack(nearestAmmo));
         
         if (info.getHealth() < 70) 
-            newBeliefs.add(new LowHealth());
+            newBeliefs.add(new LowOnHealth());
         
 
         if (info.getCurrentAmmo() < weaponry.getMaxAmmo(weaponry.getCurrentWeapon().getDescriptor().getPriAmmoItemType()) * 0.3)
-            newBeliefs.add(new LowAmmo());
+            newBeliefs.add(new LowOnAmmo());
         
         
         return newBeliefs;
@@ -317,10 +313,10 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
             switch (b.getName()) {
                  case "BeingDamaged":
                     if (((BeingDamaged) b).byEnemy()) {
-                        if(info.getLocation() == ourBase.getLocation()){
+                        if(info.getLocation() == ourHome.getLocation()){
                             newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 19));
                         } else{
-                            newDesires.add(new GoToBase(ourBase, false, 19));
+                            newDesires.add(new GoToBase(ourHome, false, 19));
                         } 
                     }
                     break;
@@ -330,15 +326,15 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
                     break;
                     
 //                case "Bored":
-//                    newDesires.add(new GoToBase(enemyBase, true, 4));
+//                    newDesires.add(new GoToBase(enemyHome, true, 4));
 //                    break;
                 case "CarryingFlag":
-                    newDesires.add(new GoToBase(ourBase, false, 20));
+                    newDesires.add(new GoToBase(ourHome, false, 20));
                     break;
                 
                 case "EnemyCarryingFlag":
                     if (((CarryingFlag) b).getCarrier() == null) {
-                        newDesires.add(new GoToBase(enemyBase, true, 10));
+                        newDesires.add(new GoToBase(enemyHome, true, 10));
                     } else {
                         log.info("I see him with my flag!!");
                         newDesires.add(new KillEnemy(((CarryingFlag) b).getCarrier(), 2));
@@ -346,12 +342,12 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
                     break;
                 
                 case "FriendCarryingFlag":
-                    newDesires.add(new GoToBase(ourBase, false, 6));
+                    newDesires.add(new GoToBase(ourHome, false, 6));
                     break;
                 
                 case "OurFlagDropped":
                     if (((FlagDropped) b).getFlag().getLocation() == null) {
-                            newDesires.add(new GoToBase(ourBase, false, 4));
+                            newDesires.add(new GoToBase(ourHome, false, 4));
                         
                     } else {
                         
@@ -361,7 +357,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
                     
                 case "EnemyFlagDropped":
                     if (((FlagDropped) b).getFlag().getLocation() == null) {
-                            newDesires.add(new GoToBase(ourBase, false, 4));
+                            newDesires.add(new GoToBase(ourHome, false, 4));
                     } else {
                         log.info("Belief: Enemy flag dropped and I see it!!");
                         newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 8));
@@ -374,28 +370,28 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
                     break;
                 
                 case "SeeingWeapon":
-                    newDesires.add(new GrabWeapon(((SeeingWeapon) b).getPoint(), 6));
+                    newDesires.add(new GetWeapon(((SeeingWeapon) b).getPoint(), 6));
                     break;
                 
                 case "SeeingAmmoPack":
                     int priority = 0;
-                    if (beliefs.contains(new LowAmmo())) {
+                    if (beliefs.contains(new LowOnAmmo())) {
                         priority = 9;
                     } else {
                         priority = 1;
                     }
                     NavPoint firstPacket = ((SeeingAmmoPack) b).getPoint();
-                    newDesires.add(new GrabAmmo(firstPacket, priority));
+                    newDesires.add(new GetAmmo(firstPacket, priority));
                     break;
                 
                 case "LowHealth":
 
                     if (beliefs.contains(new SeeingHealthPack(null))) {
                         SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
-                        newDesires.add(new GrabHealth(bel.getPoint(), 15));
+                        newDesires.add(new GetHealth(bel.getPoint(), 15));
                         lastHealthItem = bel.getPoint();
                     } else if (lastHealthItem != null) {
-                        newDesires.add(new GrabHealth(lastHealthItem, 15));
+                        newDesires.add(new GetHealth(lastHealthItem, 15));
                     }
                     break;
                 case "LowAmmoBelief":
@@ -436,10 +432,10 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
             case "CaptureEnemyFlag":
                 if (beliefs.contains(new CarryingFlag())) {
                     log.info("Plan: I have the flag! Returning to base!");
-                    navigation.navigate(ourBase);
-                } else if (beliefs.contains(new FlagInBase(enemyBase, true))) {
+                    navigation.navigate(ourHome);
+                } else if (beliefs.contains(new FlagInBase(enemyHome, true))) {
                     log.info("Plan: Flag at the enemy base, going to get it");
-                    navigation.navigate(enemyBase);
+                    navigation.navigate(enemyHome);
                 } else if (beliefs.contains(new FlagDropped(enemyFlag, true))) {
                     log.info("Plan: Enemy flag dropped, going to get it");
                     navigation.navigate(((FlagInfo) intention.getTarget()).getLocation());

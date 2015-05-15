@@ -23,15 +23,15 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoin
  *
  * @author Miguel
  */
-public class GrabWeapon extends Desire{
+public class GetWeapon extends Desire{
     
-     public GrabWeapon(IWorldObject target, int priority) {
+     public GetWeapon(IWorldObject target, int priority) {
         super.name = "GrabWeapon";
         super.target = target;
         super.priority = priority;
     }
 
-    public GrabWeapon(NavPoint target, int priority) {
+    public GetWeapon(NavPoint target, int priority) {
         super.name = "GrabWeapon";
         super.target = target;
         super.priority = priority;
