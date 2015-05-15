@@ -31,7 +31,6 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.ConfigC
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.FlagInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.GameInfo;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.InitedMessage;
-import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Item;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Self;
@@ -77,7 +76,6 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     
     protected GameInfo gameInfo;
     
-     // Has info about CTF flags and bases been initiaized?
     private boolean initialized = false;
     /**
      * Agent's Beliefs
@@ -99,7 +97,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     
     private UT2004PathAutoFixer autoFixer;
     
-    // Last known health packet location
+    // Last known health pack location
     private NavPoint lastHealthItem = null;
     
     @Override
@@ -126,14 +124,15 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
 						switch (changedValue.getState()) {
 							case STUCK:
 								desiresList.remove(desiresList.last());
-                                                                filter(beliefsList, desiresList, selectedIntention);
+                                                                if(desiresList.size() > 0)
+                                                                    filter(beliefsList, desiresList);
                                                                 createAndExecutePlan(beliefsList, selectedIntention);
 								break;
 
 						}
 					}
 				});
-        // DEFINE WEAPON PREFERENCES
+        //WEAPON PREFERENCES
 		weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, false);
 		weaponPrefs.addGeneralPref(UT2004ItemType.MINIGUN, true);
 		weaponPrefs.addGeneralPref(UT2004ItemType.LINK_GUN, false);
@@ -197,20 +196,19 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
         }
 
         if (!executingPlan) {
-            BDIAlgorithm();
+            BDI();
         }
     }
     
     /**
     * BDI ALGORITHM
     */
-    private void BDIAlgorithm() {
+    private void BDI() {
         
         beliefsList = beliefRevision();        
-   //     desiresList = options(beliefsList, selectedIntention);
         desiresList = options(beliefsList);
         if(desiresList.size() > 0)
-            selectedIntention = filter(beliefsList, desiresList, selectedIntention);
+            selectedIntention = filter(beliefsList, desiresList);
         createAndExecutePlan(beliefsList, selectedIntention);
     }
     
@@ -257,10 +255,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
 
         if (ctf.isBotCarryingEnemyFlag()) 
             newBeliefs.add(new CarryingFlag());
-        
 
-        
-       
         if (players.canSeeEnemies()) 
             newBeliefs.add(new SeeingEnemy(players.getNearestVisibleEnemy())); 
         
@@ -304,107 +299,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     
     }
     
-    /**
-     * Creates the list of the agent's desires according to the current beliefs and
-     * his previous intention.
-     */
-    private SortedSet<Desire> options(ArrayList<Belief> beliefs, Intention intention) {
-        SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
-        
-        for (Belief b : beliefs) {
-            switch (b.getName()) {
-                 case "BeingDamaged":
-                    if (((BeingDamaged) b).byEnemy()) {
-                        if(info.getLocation() == ourHome.getLocation()){
-                            newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 19));
-                        } else{
-                            newDesires.add(new GoToBase(ourHome, false, 19));
-                        } 
-                    }
-                    break;
-                
-                case "SeeingEnemy":
-                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 2));
-                    break;
-                    
-//                case "Bored":
-//                    newDesires.add(new GoToBase(enemyHome, true, 4));
-//                    break;
-                case "CarryingFlag":
-                    newDesires.add(new GoToBase(ourHome, false, 20));
-                    break;
-                
-                case "EnemyCarryingFlag":
-                    if (((CarryingFlag) b).getCarrier() == null) {
-                        newDesires.add(new GoToBase(enemyHome, true, 10));
-                    } else {
-                        log.info("I see him with my flag!!");
-                        newDesires.add(new KillEnemy(((CarryingFlag) b).getCarrier(), 2));
-                    }
-                    break;
-                
-                case "FriendCarryingFlag":
-                    newDesires.add(new GoToBase(ourHome, false, 6));
-                    break;
-                
-                case "OurFlagDropped":
-                    if (((FlagDropped) b).getFlag().getLocation() == null) {
-                            newDesires.add(new GoToBase(ourHome, false, 4));
-                        
-                    } else {
-                        
-                        newDesires.add(new CaptureOwnFlag(((FlagDropped) b).getFlag(), 8));
-                    }
-                    break;
-                    
-                case "EnemyFlagDropped":
-                    if (((FlagDropped) b).getFlag().getLocation() == null) {
-                            newDesires.add(new GoToBase(ourHome, false, 4));
-                    } else {
-                        log.info("Belief: Enemy flag dropped and I see it!!");
-                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 8));
-                    }
-                    break;
-                case "EnemyFlagInBase":
-                    if (!beliefs.contains(new CarryingFlag())) {
-                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 1));
-                    }
-                    break;
-                
-                case "SeeingWeapon":
-                    newDesires.add(new GetWeapon(((SeeingWeapon) b).getPoint(), 6));
-                    break;
-                
-                case "SeeingAmmoPack":
-                    int priority = 0;
-                    if (beliefs.contains(new LowOnAmmo())) {
-                        priority = 9;
-                    } else {
-                        priority = 1;
-                    }
-                    NavPoint firstPacket = ((SeeingAmmoPack) b).getPoint();
-                    newDesires.add(new GetAmmo(firstPacket, priority));
-                    break;
-                
-                case "LowHealth":
-
-                    if (beliefs.contains(new SeeingHealthPack(null))) {
-                        SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
-                        newDesires.add(new GetHealth(bel.getPoint(), 15));
-                        lastHealthItem = bel.getPoint();
-                    } else if (lastHealthItem != null) {
-                        newDesires.add(new GetHealth(lastHealthItem, 15));
-                    }
-                    break;
-                case "LowAmmoBelief":
-                    newDesires.add(new ChangeWeapon(18));
-                    break;
-                    
-             }
-        }
-         
-        return newDesires;
-    }
+   
     
     private SortedSet<Desire> options(ArrayList<Belief> beliefs) {
         SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
@@ -510,7 +405,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     
     
     
-    private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires, Intention intention) {
+    private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires) {
         
             Desire d = desires.last();
             return new Intention(d.getName(), d.getTarget());
