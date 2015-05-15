@@ -555,21 +555,22 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                 }
                 break;
             
-            case "CaptureOurFlag":
+            case "CaptureOwnFlag":
                 Location loc = ((FlagInfo) intention.getTarget()).getLocation();
                 if (loc != null) {
                     log.info("Plan: Capturing our flag");
                     navigation.navigate(loc);
                 }
                 break;
+                
             case "GoToEnemyBase":
                 log.info("Plan: Going to enemy base");
                 NavPoint target = (NavPoint) intention.getTarget();
               
                 navigation.navigate(target);
                 break;
-            case "GoToOurBase":
                 
+            case "GoToOurBase":
                 log.info("Plan: Going to my base");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
