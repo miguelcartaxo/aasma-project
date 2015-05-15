@@ -49,6 +49,7 @@ import java.util.TreeSet;
 import pt.tecnico.aasma.beliefs.BeingDamaged;
 import pt.tecnico.aasma.beliefs.Belief;
 import pt.tecnico.aasma.beliefs.CarryingFlag;
+import pt.tecnico.aasma.beliefs.DiscoverNemesis;
 import pt.tecnico.aasma.beliefs.FlagDropped;
 import pt.tecnico.aasma.beliefs.FlagInBase;
 import pt.tecnico.aasma.beliefs.LowOnAmmo;
@@ -67,6 +68,7 @@ import pt.tecnico.aasma.desires.GetHealth;
 import pt.tecnico.aasma.desires.GetWeapon;
 import pt.tecnico.aasma.desires.Intention;
 import pt.tecnico.aasma.desires.KillEnemy;
+import pt.tecnico.aasma.desires.NemesisVengeance;
 
 /**
  *
@@ -102,6 +104,8 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
     
     // Last known health packet location
     private NavPoint lastHealthItem = null;
+    
+    private Player nemesis = null;
     
     @Override
 	public void botFirstSpawn(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init, Self self) {
@@ -406,6 +410,9 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
                     newDesires.add(new ChangeWeapon(18));
                     break;
                     
+//                case "DiscoverNemesis":
+//                        newDesires.add(new NemesisVengeance(((DiscoverNemesis) b).getNemesis(), 13 ));
+                    
              }
         }
          
@@ -491,6 +498,12 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
                     weaponry.changeWeapon((ItemType) loadedWeapons[random.nextInt(loadedWeapons.length)]);
                 }
             
+//            case "NemesisVengeance":
+//                log.info("Plan: revenge is a dish served cold! I'm comming to get you!");
+//                Player n = (Player) intention.getTarget();
+//                navigation.navigate(n);
+//                shoot.shoot(weaponPrefs, n);  
+            
         }
     
         executingPlan = false;
@@ -534,4 +547,14 @@ public class HybridAgent extends UT2004BotModuleController<UT2004Bot> {
             rePlan();
         }
     }
+    
+//    @EventListener(eventClass = PlayerKilled.class)
+//    protected void playerKilled(PlayerKilled event) {
+//       
+//      UnrealId n = event.getKiller();
+//      nemesis = (Player) getWorldView().get(n);
+//      
+//       beliefsList.add(new DiscoverNemesis(nemesis));
+//       rePlan();
+//    }
 }

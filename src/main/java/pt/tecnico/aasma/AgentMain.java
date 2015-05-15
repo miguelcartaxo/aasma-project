@@ -17,7 +17,7 @@ public class AgentMain {
     }
     public static void main(String args[]) throws PogamutException {
         
-        AgentType type = AgentType. BRAVE_DELIBERATIVE;
+        AgentType type = AgentType. HYBRID;
         
         if(type == AgentType.REACTIVE){
                 new UT2004BotRunner( // class that wrapps logic for bots executions, suitable to run single bot in single JVM
