@@ -157,30 +157,7 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
     
     @Override
     public void botInitialized(GameInfo gameInfo, ConfigChange currentConfig, InitedMessage init) {
-
        this.gameInfo = gameInfo;
-//        navigation.getPathExecutor().addStuckDetector(new UT2004TimeStuckDetector(bot, 3.0, 10.0));       // if the bot does not move for 3 seconds, considered that it is stuck
-//
-//        navigation.getPathExecutor().getState().addStrongListener(new FlagListener<IPathExecutorState>() {
-//            @Override
-//            public void flagChanged(IPathExecutorState changedValue) {
-//                switch (changedValue.getState()) {
-//                    /*case PATH_COMPUTATION_FAILED:
-//                     // if path computation fails to whatever reason, just try another navpoint
-//                     case TARGET_REACHED:
-//                     break;*/
-//
-//                    case STUCK:
-//                        //body.getCommunication().sendGlobalTextMessage("STUUUUUUUUUUUUUUUUUUUUUCK!!!!!!!!");
-//                        // if we get stuck, we will try other goal                	
-//                        currentDesires.remove(currentDesires.last());
-//                        filter(currentBeliefs, currentDesires, currentIntention);
-//                        createAndExecutePlan(currentBeliefs, currentIntention);
-//                        break;
-//                }
-//            }
-//        });
-        System.out.println("BOT INITIALIZED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     }
     
     /**
@@ -455,7 +432,6 @@ public class DeliberativeAgent extends UT2004BotModuleController<UT2004Bot> {
             ourBase = ctf.getOurBase();
             enemyBase = ctf.getEnemyBase();
             initialized = true;
-            System.out.println("INITIALIZINGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
         }
 
         if (!players.canSeeEnemies()) {
