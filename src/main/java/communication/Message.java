@@ -18,6 +18,8 @@ package communication;
 
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;
+import cz.cuni.amis.pogamut.ut2004.agent.module.sensor.AgentInfo;
+import cz.cuni.amis.pogamut.ut2004.bot.impl.UT2004BotName;
 import java.util.EventObject;
 import java.util.StringTokenizer;
 import javax.swing.JOptionPane;
@@ -27,34 +29,28 @@ import javax.swing.JOptionPane;
  * @author march_000
  */
 public class Message{
-   
-    private String msg;
-    private Location location;
-    private String id;
-    private boolean direct;
-    private String botName;
 
-    public String getBotName() {
+    private String team;
+    private Location location;
+    private String botName;
+    private String msg;
+
+    public String  getBotName() {
         return botName;
     }
 
-    public void setBotName(String botName) {
+    public void setBotName(String  botName) {
         this.botName = botName;
     }
 
-    public Message() {
-    }
+        public Message() {
+        }
     
-        public Message(String s) {
-   
-        s=s.replace(",", "");
-
-        StringTokenizer st = new StringTokenizer(s, " ");
-
-        this.location = new Location(Double.parseDouble(st.nextToken()), Double.parseDouble(st.nextToken()), Double.parseDouble(st.nextToken()));
-        this.id = st.nextToken();
-        this.direct = Boolean.parseBoolean(st.nextToken());
-        this.botName = st.nextToken();
+        public Message(String s, AgentInfo info) {
+        this.location = new Location(info.getLocation());
+        this.botName = info.getBotName().toString();
+        setTeam(info.getTeam());
+        this.msg = s;
         }
        
  
@@ -66,27 +62,19 @@ public class Message{
         this.location = location;
     }
 
-    public String getId() {
-        return id;
+    public String getTeam() {
+     return this.team;
     }
-
-    public void setId(String id) {
-        this.id = id;
+    
+    public void setTeam(int team) {
+        if(team==1)
+            this.team="Red";
+        else this.team="Blue";
     }
-
-    public boolean isDirect() {
-        return direct;
-    }
-
-    public void setDirect(boolean Direct) {
-        this.direct = Direct;
-    }
-
+    
     @Override
     public String toString() {
-        return msg + " from " + botName + " in: " + location.x + ", " +location.y + ", " + location.z+ ", " + id + ", " + direct + ", " + botName;
+        //ex: HELP;BotName:1,2,3
+        return msg + ";" + botName + ":" + location.x + "," +location.y + "," + location.z;
     }
-
-
-
 }

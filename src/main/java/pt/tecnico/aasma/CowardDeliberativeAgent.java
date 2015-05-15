@@ -82,15 +82,15 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     /**
      * Agent's Beliefs
      */
-    protected ArrayList<Belief> currentBeliefs;
+    protected ArrayList<Belief> beliefsList;
     /**
      * Agent's Desires 
      */
-    protected SortedSet<Desire> currentDesires;
+    protected SortedSet<Desire> desiresList;
     /**
      * Agent's Intention
      */
-    protected Intention currentIntention;
+    protected Intention selectedIntention;
     
     // Info about both flags
     protected FlagInfo ourFlag, enemyFlag;
@@ -125,9 +125,9 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
 					public void flagChanged(IPathExecutorState changedValue) {
 						switch (changedValue.getState()) {
 							case STUCK:
-								currentDesires.remove(currentDesires.last());
-                                                                filter(currentBeliefs, currentDesires, currentIntention);
-                                                                createAndExecutePlan(currentBeliefs, currentIntention);
+								desiresList.remove(desiresList.last());
+                                                                filter(beliefsList, desiresList, selectedIntention);
+                                                                createAndExecutePlan(beliefsList, selectedIntention);
 								break;
 
 						}
@@ -152,7 +152,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
      */
     @Override
     public Initialize getInitializeCommand() {
-        return new Initialize().setName("DeliberativeAgent");
+        return new Initialize().setName("CowardDeliberativeAgent");
     }
     
     @Override
@@ -166,9 +166,9 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
      */
     @Override
     public void beforeFirstLogic() {
-        currentBeliefs = new ArrayList<>();
+        beliefsList = new ArrayList<>();
 
-        currentDesires = new TreeSet<>(new Comparator<Desire>() {
+        desiresList = new TreeSet<>(new Comparator<Desire>() {
             
             //Organizes the set in an ascending order
             //Higher integer means higher priority
@@ -177,7 +177,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
                 return d1.getPriority() - d2.getPriority();
             }
         });
-        currentIntention = null;
+        selectedIntention = null;
     }
     
     @Override
@@ -206,10 +206,12 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
     */
     private void BDIAlgorithm() {
         
-        currentBeliefs = beliefRevision();        
-        currentDesires = options(currentBeliefs, currentIntention);
-        currentIntention = filter(currentBeliefs, currentDesires, currentIntention);
-        createAndExecutePlan(currentBeliefs, currentIntention);
+        beliefsList = beliefRevision();        
+   //     desiresList = options(beliefsList, selectedIntention);
+        desiresList = options(beliefsList);
+        if(desiresList.size() > 0)
+            selectedIntention = filter(beliefsList, desiresList, selectedIntention);
+        createAndExecutePlan(beliefsList, selectedIntention);
     }
     
     private ArrayList<Belief> beliefRevision() {
@@ -307,7 +309,7 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
      * his previous intention.
      */
     private SortedSet<Desire> options(ArrayList<Belief> beliefs, Intention intention) {
-        SortedSet<Desire> newDesires = new TreeSet(currentDesires.comparator());
+        SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
         
         for (Belief b : beliefs) {
             switch (b.getName()) {
@@ -404,14 +406,115 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
         return newDesires;
     }
     
+    private SortedSet<Desire> options(ArrayList<Belief> beliefs) {
+        SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
+        
+        for (Belief b : beliefs) {
+            switch (b.getName()) {
+                 case "BeingDamaged":
+                    if (((BeingDamaged) b).byEnemy()) {
+                        newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 19));
+                    }
+                    break;
+                
+                case "SeeingEnemy":
+                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 16));
+                    break;
+                    
+//                case "Bored":
+//                    newDesires.add(new GoToBase(enemyHome, true, 4));
+//                    break;
+                case "CarryingFlag":
+                    newDesires.add(new GoToBase(ourHome, false, 14));
+                    break;
+                
+                case "EnemyCarryingFlag":
+                    if (((CarryingFlag) b).getCarrier() == null) {
+                        newDesires.add(new GoToBase(enemyHome, true, 5));
+                    } else {
+                        log.info("I see him with my flag!!");
+                        newDesires.add(new KillEnemy(((CarryingFlag) b).getCarrier(), 15));
+                    }
+                    break;
+                
+                case "FriendCarryingFlag":
+                    newDesires.add(new GoToBase(ourHome, false, 5));
+                    break;
+                
+                case "OurFlagDropped":
+                    if (((FlagDropped) b).getFlag().getLocation() == null) {
+                        if (info.getLocation().getDistance(enemyHome.getLocation()) >= info.getLocation().getDistance(ourHome.getLocation())) {
+                            newDesires.add(new GoToBase(enemyHome, true, 8));
+                        } else {
+                            newDesires.add(new GoToBase(ourHome, false, 8));
+                        }
+                    } else {
+                        
+                        newDesires.add(new CaptureOwnFlag(((FlagDropped) b).getFlag(), 10));
+                    }
+                    break;
+                    
+                case "EnemyFlagDropped":
+                    if (((FlagDropped) b).getFlag().getLocation() == null) {
+                        if (info.getLocation().getDistance(enemyHome.getLocation()) >= info.getLocation().getDistance(ourHome.getLocation())) {
+                            newDesires.add(new GoToBase(enemyHome, true, 8));
+                        } else {
+                            newDesires.add(new GoToBase(ourHome, false, 8));
+                        }
+                    } else {
+                        log.info("Belief: Enemy flag dropped and I see it!!");
+                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 10));
+                    }
+                    break;
+                case "EnemyFlagInBase":
+                    if (!beliefs.contains(new CarryingFlag())) {
+                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
+                    }
+                    break;
+                
+                case "SeeingWeapon":
+                    newDesires.add(new GetWeapon(((SeeingWeapon) b).getPoint(), 6));
+                    break;
+                
+                case "SeeingAmmoPack":
+                    int priority = 0;
+                    if (beliefs.contains(new LowOnAmmo())) {
+                        priority = 9;
+                    } else {
+                        priority = 1;
+                    }
+                    NavPoint firstPacket = ((SeeingAmmoPack) b).getPoint();
+                    newDesires.add(new GetAmmo(firstPacket, priority));
+                    break;
+                
+                case "LowHealth":
+
+                    if (beliefs.contains(new SeeingHealthPack(null))) {
+                        SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
+                        newDesires.add(new GetHealth(bel.getPoint(), 7));
+                        lastHealthItem = bel.getPoint();
+                    } else if (lastHealthItem != null) {
+                        newDesires.add(new GetHealth(lastHealthItem, 7));
+                    }
+                    break;
+                case "LowAmmoBelief":
+                    newDesires.add(new ChangeWeapon(18));
+                    break;
+                    
+             }
+        }
+         
+        return newDesires;
+    }
+    
+    
+    
     
     private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires, Intention intention) {
-        if (desires.size() > 0) {
+        
             Desire d = desires.last();
             return new Intention(d.getName(), d.getTarget());
-        }
-        return intention;
-    }
+      }
     
     private void createAndExecutePlan(ArrayList<Belief> beliefs, Intention intention) {
        executingPlan = true;
@@ -461,18 +564,18 @@ public class CowardDeliberativeAgent extends UT2004BotModuleController<UT2004Bot
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
         
-            case "GrabWeapon":
-                log.info("Plan: Grabing Weapon");
+            case "GettWeapon":
+                log.info("Plan: Getting Weapon");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
-            case "GrabHealth":
-                log.info("Plan: Grabing Health");
+            case "GetHealth":
+                log.info("Plan: Getting Health");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
-            case "GrabAmmo":
-                log.info("Plan: Grabing Ammo");
+            case "GetAmmo":
+                log.info("Plan: Getting Ammo");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             

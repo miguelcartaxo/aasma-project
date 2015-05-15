@@ -16,8 +16,11 @@
  */
 package pt.tecnico.aasma;
 
+import communication.Message;
 import cz.cuni.amis.pogamut.base.agent.module.comm.PogamutJVMComm;
 import cz.cuni.amis.pogamut.base.agent.navigation.IPathExecutorState;
+import cz.cuni.amis.pogamut.base.communication.worldview.listener.annotation.EventListener;
+import cz.cuni.amis.pogamut.base.communication.worldview.object.IWorldObject;
 import cz.cuni.amis.pogamut.base.utils.math.DistanceUtils;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 import cz.cuni.amis.pogamut.unreal.communication.messages.UnrealId;
@@ -35,13 +38,16 @@ import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Item;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
 import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Self;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.TeamChat;
 import cz.cuni.amis.utils.exception.PogamutException;
 import cz.cuni.amis.utils.flag.FlagListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import pt.tecnico.aasma.beliefs.BeingDamaged;
 import pt.tecnico.aasma.beliefs.Belief;
 import pt.tecnico.aasma.beliefs.CarryingFlag;
@@ -61,6 +67,7 @@ import pt.tecnico.aasma.desires.GoToBase;
 import pt.tecnico.aasma.desires.GetAmmo;
 import pt.tecnico.aasma.desires.GetHealth;
 import pt.tecnico.aasma.desires.GetWeapon;
+import pt.tecnico.aasma.desires.GoToAssistFriend;
 import pt.tecnico.aasma.desires.Intention;
 import pt.tecnico.aasma.desires.KillEnemy;
 
@@ -82,15 +89,15 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
     /**
      * Agent's Beliefs
      */
-    protected ArrayList<Belief> currentBeliefs;
+    protected ArrayList<Belief> beliefsList;
     /**
      * Agent's Desires 
      */
-    protected SortedSet<Desire> currentDesires;
+    protected SortedSet<Desire> desiresList;
     /**
      * Agent's Intention
      */
-    protected Intention currentIntention;
+    protected Intention selectedIntention;
     
     // Info about both flags
     protected FlagInfo ourFlag, enemyFlag;
@@ -125,9 +132,9 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
 					public void flagChanged(IPathExecutorState changedValue) {
 						switch (changedValue.getState()) {
 							case STUCK:
-								currentDesires.remove(currentDesires.last());
-                                                                filter(currentBeliefs, currentDesires, currentIntention);
-                                                                createAndExecutePlan(currentBeliefs, currentIntention);
+								desiresList.remove(desiresList.last());
+                                                                filter(beliefsList, desiresList, selectedIntention);
+                                                                createAndExecutePlan(beliefsList, selectedIntention);
 								break;
 
 						}
@@ -152,7 +159,7 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
      */
     @Override
     public Initialize getInitializeCommand() {
-        return new Initialize().setName("DeliberativeAgent");
+        return new Initialize().setName("BraveDeliberativeAgent");
     }
     
     @Override
@@ -166,9 +173,9 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
      */
     @Override
     public void beforeFirstLogic() {
-        currentBeliefs = new ArrayList<>();
+        beliefsList = new ArrayList<>();
 
-        currentDesires = new TreeSet<>(new Comparator<Desire>() {
+        desiresList = new TreeSet<>(new Comparator<Desire>() {
             
             //Organizes the set in an ascending order
             //Higher integer means higher priority
@@ -177,7 +184,7 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                 return d1.getPriority() - d2.getPriority();
             }
         });
-        currentIntention = null;
+        selectedIntention = null;
     }
     
     @Override
@@ -206,10 +213,12 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
     */
     private void BDIAlgorithm() {
         
-        currentBeliefs = beliefRevision();        
-        currentDesires = options(currentBeliefs, currentIntention);
-        currentIntention = filter(currentBeliefs, currentDesires, currentIntention);
-        createAndExecutePlan(currentBeliefs, currentIntention);
+        beliefsList = beliefRevision();        
+       // desiresList = options(beliefsList, selectedIntention);
+         desiresList = options(beliefsList);
+         if(desiresList.size() > 0)
+            selectedIntention = filter(beliefsList, desiresList, selectedIntention);
+        createAndExecutePlan(beliefsList, selectedIntention);
     }
     
     private ArrayList<Belief> beliefRevision() {
@@ -302,12 +311,8 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
     
     }
     
-    /**
-     * Creates the list of the agent's desires according to the current beliefs and
-     * his previous intention.
-     */
     private SortedSet<Desire> options(ArrayList<Belief> beliefs, Intention intention) {
-        SortedSet<Desire> newDesires = new TreeSet(currentDesires.comparator());
+        SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
         
         for (Belief b : beliefs) {
             switch (b.getName()) {
@@ -408,12 +413,117 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
     }
     
     
-    private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires, Intention intention) {
-        if (desires.size() > 0) {
-            Desire d = desires.last();
-            return new Intention(d.getName(), d.getTarget());
+    private SortedSet<Desire> options(ArrayList<Belief> beliefs) {
+        SortedSet<Desire> newDesires = new TreeSet(desiresList.comparator());
+        
+        for (Belief b : beliefs) {
+            switch (b.getName()) {
+                 case "BeingDamaged":
+                    if (((BeingDamaged) b).byEnemy()) {
+                        newDesires.add(new KillEnemy(((BeingDamaged) b).getEnemy(), 19));
+                    }
+                    Message m = new Message("HELP", info);
+                    log.log(Level.INFO, "BEIING HIT!");
+                    body.getCommunication().sendTeamBubbleMessage(m.toString(), -1);
+                     body.getCommunication().sendGlobalBubbleMessage("I\'M HIT\'!", -1);
+                    break;
+                
+                case "SeeingEnemy":
+                    newDesires.add(new KillEnemy(((SeeingEnemy) b).getEnemy(), 16));
+                    break;
+                    
+//                case "Bored":
+//                    newDesires.add(new GoToBase(enemyHome, true, 4));
+//                    break;
+                case "CarryingFlag":
+                    newDesires.add(new GoToBase(ourHome, false, 14));
+                    break;
+                
+                case "EnemyCarryingFlag":
+                    if (((CarryingFlag) b).getCarrier() == null) {
+                        newDesires.add(new GoToBase(enemyHome, true, 5));
+                    } else {
+                        log.info("I see him with my flag!!");
+                        newDesires.add(new KillEnemy(((CarryingFlag) b).getCarrier(), 15));
+                    }
+                    break;
+                
+                case "FriendCarryingFlag":
+                    newDesires.add(new GoToBase(ourHome, false, 5));
+                    break;
+                
+                case "OurFlagDropped":
+                    if (((FlagDropped) b).getFlag().getLocation() == null) {
+                        if (info.getLocation().getDistance(enemyHome.getLocation()) >= info.getLocation().getDistance(ourHome.getLocation())) {
+                            newDesires.add(new GoToBase(enemyHome, true, 8));
+                        } else {
+                            newDesires.add(new GoToBase(ourHome, false, 8));
+                        }
+                    } else {
+                        
+                        newDesires.add(new CaptureOwnFlag(((FlagDropped) b).getFlag(), 10));
+                    }
+                    break;
+                    
+                case "EnemyFlagDropped":
+                    if (((FlagDropped) b).getFlag().getLocation() == null) {
+                        if (info.getLocation().getDistance(enemyHome.getLocation()) >= info.getLocation().getDistance(ourHome.getLocation())) {
+                            newDesires.add(new GoToBase(enemyHome, true, 8));
+                        } else {
+                            newDesires.add(new GoToBase(ourHome, false, 8));
+                        }
+                    } else {
+                        log.info("Belief: Enemy flag dropped and I see it!!");
+                        newDesires.add(new CaptureEnemyFlag(((FlagDropped) b).getFlag(), 10));
+                    }
+                    break;
+                case "EnemyFlagInBase":
+                    if (!beliefs.contains(new CarryingFlag())) {
+                        newDesires.add(new CaptureEnemyFlag(enemyFlag, 10));
+                    }
+                    break;
+                
+                case "SeeingWeapon":
+                    newDesires.add(new GetWeapon(((SeeingWeapon) b).getPoint(), 6));
+                    break;
+                
+                case "SeeingAmmoPack":
+                    int priority = 0;
+                    if (beliefs.contains(new LowOnAmmo())) {
+                        priority = 9;
+                    } else {
+                        priority = 1;
+                    }
+                    NavPoint firstPacket = ((SeeingAmmoPack) b).getPoint();
+                    newDesires.add(new GetAmmo(firstPacket, priority));
+                    break;
+                
+                case "LowHealth":
+
+                    if (beliefs.contains(new SeeingHealthPack(null))) {
+                        SeeingHealthPack bel = (SeeingHealthPack) beliefs.get(beliefs.indexOf(new SeeingHealthPack(null)));
+                        newDesires.add(new GetHealth(bel.getPoint(), 7));
+                        lastHealthItem = bel.getPoint();
+                    } else if (lastHealthItem != null) {
+                        newDesires.add(new GetHealth(lastHealthItem, 7));
+                    }
+                    break;
+                case "LowAmmoBelief":
+                    newDesires.add(new ChangeWeapon(18));
+                    break;
+                    
+             }
         }
-        return intention;
+         
+        return newDesires;
+    }
+    
+    
+    private Intention filter(ArrayList<Belief> beliefs, SortedSet<Desire> desires, Intention intention) {
+            Desire d = desires.last();
+            if(!d.getName().equals("GoToAssistFriend"))
+                 return new Intention(d.getName(), d.getTarget());
+            else return new Intention(d.getName(), d.getLocation());
     }
     
     private void createAndExecutePlan(ArrayList<Belief> beliefs, Intention intention) {
@@ -464,18 +574,18 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
         
-            case "GrabWeapon":
-                log.info("Plan: Grabing Weapon");
+            case "GetWeapon":
+                log.info("Plan: Getting Weapon");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
-            case "GrabHealth":
-                log.info("Plan: Grabing Health");
+            case "GetHealth":
+                log.info("Plan: Getting Health");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
-            case "GrabAmmo":
-                log.info("Plan: Grabing Ammo");
+            case "GetAmmo":
+                log.info("Plan: Getting Ammo");
                 navigation.navigate((NavPoint) intention.getTarget());
                 break;
             
@@ -486,11 +596,49 @@ public class BraveDeliberativeAgent extends UT2004BotModuleController<UT2004Bot>
                     weaponry.changeWeapon((ItemType) loadedWeapons[random.nextInt(loadedWeapons.length)]);
                 }
             
+            case "GoToAssistFriend":
+                log.info("Plan: Getting Weapon");
+                navigation.navigate(intention.getLocation());
+                break;
+            
         }
     
         executingPlan = false;
     }
     
+    // body.getCommunication().sendTeamBubbleMessage(me.toString(), -1);
+    // MessageEvent msg = Utils.buildCorrectMessageType(info);
+      @EventListener(eventClass = TeamChat.class)
+    protected void receiveMessage(TeamChat event) {
+        log.log(Level.INFO, "MESSAGE RECEIVED: {0}", event.getText());
+//        
+        String strprs = event.getText();
+ 
+        String[] toSplit = strprs.split(":");
+        String msgToSplit = toSplit[0];
+        String[] msgSplitted = msgToSplit.split(";");
+        String msg = msgSplitted[0];
+        String botName = msgSplitted[1];
+        String locToSplit = toSplit[1];
+        String[] locationOfSender = locToSplit.split(":");
+        String localx = locationOfSender[0];
+        String localy = locationOfSender[1];
+        String localz = locationOfSender[2];
+//        
+       Location locOfSender = new Location(Double.parseDouble(localx), Double.parseDouble(localy), Double.parseDouble(localz));
+//        
+//
+        log.log(Level.INFO, "BotInMessage - {0}", botName);
+        log.log(Level.INFO, "BotInMessage - {0}", info.getBotName());
+        if (!botName.equals(info.getBotName().toString())) {
+            log.log(Level.INFO, "Handled Message - timestamp: {0}", new Date(System.currentTimeMillis()));
+            log.log(Level.INFO, "Message: {0}", event.getText());
+            
+            if (msg.equals("HELP")) {
+                log.info("Let's go help m8!");
+                desiresList.add(new GoToAssistFriend(locOfSender, 19));
+            }
+        }
     
-    
+    }    
 }

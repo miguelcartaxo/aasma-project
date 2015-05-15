@@ -17,6 +17,7 @@
 package pt.tecnico.aasma.desires;
 
 import cz.cuni.amis.pogamut.base.communication.worldview.object.IWorldObject;
+import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
 
 /**
  *
@@ -28,10 +29,15 @@ public class Intention {
     
     /* Target to which the intention applies */
     IWorldObject target = null;
-    
+    Location l;
      public Intention(String name, IWorldObject target) {
        this.name = name;
        this.target = target;
+    }
+     
+     public Intention(String name, Location target) {
+       this.name = name;
+       this.l = target;
     }
      
      public String getName() {
@@ -48,6 +54,14 @@ public class Intention {
 
     public void setTarget(IWorldObject target) {
         this.target = target;
+    }
+    
+     public Location getLocation() {
+        return l;
+    }
+
+    public void setTarget(Location l) {
+        this.l = l;
     }
     
 }

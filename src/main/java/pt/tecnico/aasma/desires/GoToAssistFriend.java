@@ -18,53 +18,29 @@ package pt.tecnico.aasma.desires;
 
 import cz.cuni.amis.pogamut.base.communication.worldview.object.IWorldObject;
 import cz.cuni.amis.pogamut.base3d.worldview.object.Location;
+import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.NavPoint;
 
 /**
  *
  * @author Miguel
  */
-public abstract class Desire {
+public class GoToAssistFriend extends Desire{
     
-    String name = "";
-    
-    /* Target to which the desire applies */
-    IWorldObject target = null;
-    
-    Location local = null;
-    
-    protected int priority;
-
-    
-    public int getPriority() {
-        return priority;
+     public GoToAssistFriend(IWorldObject target, int priority) {
+        super.name = this.getClass().getSimpleName();
+         super.target = target;
+        super.priority = priority;
     }
-
-    public void setPriority(int priority) {
-        this.priority = priority;
+     
+ public GoToAssistFriend(Location local, int priority) {
+        super.name = this.getClass().getSimpleName();
+         super.local = local;
+        super.priority = priority;
     }
-    
-    public String getName() {
-        return name;
+     
+    public GoToAssistFriend(NavPoint target, int priority) {
+        super.name = this.getClass().getSimpleName();
+        super.target = target;
+        super.priority = priority;
     }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-    
-    public Location getLocation() {
-        return local;
-    }
-
-    public void setLocation(Location local) {
-        this.name = name;
-    }
-
-    public IWorldObject getTarget() {
-        return target;
-    }
-
-    public void setTarget(IWorldObject target) {
-        this.target = target;
-    }
-    
 }
