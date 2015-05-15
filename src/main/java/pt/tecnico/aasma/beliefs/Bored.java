@@ -16,29 +16,17 @@
  */
 package pt.tecnico.aasma.beliefs;
 
-import cz.cuni.amis.pogamut.ut2004.communication.messages.gbinfomessages.Player;
-
 /**
  *
  * @author Miguel
  */
-public class SeeingEnemy extends Belief{
-     protected Player enemy;
-
-    public SeeingEnemy(Player enemy) {
+public class Bored extends Belief{
+    
+    public Bored() {
         super.name = this.getClass().getSimpleName();
-        this.enemy = enemy;
     }
-
-    public Player getEnemy() {
-        return enemy;
-    }
-
-    public void setEnemy(Player enemy) {
-        this.enemy = enemy;
-    }
-
-    @Override
+    
+     @Override
     public boolean equals(Object obj) {
         if (obj == null) {
             return false;
@@ -46,14 +34,7 @@ public class SeeingEnemy extends Belief{
         if (getClass() != obj.getClass() || !obj.getClass().isInstance(this)) {
             return false;
         }
-        final SeeingEnemy other = (SeeingEnemy) obj;
-        if (!this.name.equals(other.getName()))
-            return false;
         
-        if (this.enemy == null || other.getEnemy() == null || !this.enemy.equals(other.getEnemy())) {
-            return false;
-        }
         return true;
     }
-    
 }
